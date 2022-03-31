@@ -16,8 +16,10 @@ Taken from https://github.com/shadowsocks/go-shadowsocks2/blob/master/tcp.go sin
 code is not importable and needed some modifications to accept only one connection.
 */
 
+// ListenForOneConnection create a local socks5 proxy and listen for 1 connection
 func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn, ready chan bool, getAddr func(net.Conn) (socks.Addr, error)) {
 	l, err := net.Listen("tcp", addr)
+	defer l.Close()
 	if err != nil {
 		log.Printf("failed to listen on %s: %v", addr, err)
 		return
