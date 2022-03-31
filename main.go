@@ -46,7 +46,7 @@ func main() {
 		}
 		details, err := getShadowsocksProxyDetails(address)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Unable to get information for adress %s", address), http.StatusBadGateway)
+			http.Error(w, fmt.Sprintf("Unable to get information for address %s", address), http.StatusBadGateway)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
