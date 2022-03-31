@@ -19,6 +19,7 @@ import (
 	"strings"
 )
 
+// WTFIsMyIPData is a data representation with the same structure returned by https://wtfismyip.com/json
 type WTFIsMyIPData struct {
 	YourFuckingIPAddress   string `json:"YourFuckingIPAddress"`
 	YourFuckingLocation    string `json:"YourFuckingLocation"`
