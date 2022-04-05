@@ -15,3 +15,7 @@ Using curl, call te test endpoint with a SIP002 compatible address:
 - 200: Everything went well and there's data for you in the https://wtfismyip.com/json format
 - 4xx: You are either requesting the wrong URL or passing bad data to the server
 - 502: There was an error getting data for this address which means either the address is invalid or the server is offline
+
+## Demo service
+
+A demo service is deployed at https://sshadowtest.herokuapp.com/
