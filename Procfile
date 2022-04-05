@@ -1,1 +1,1 @@
-web: ShadowTest
+web: bin/ShadowTest
