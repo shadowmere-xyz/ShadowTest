@@ -17,6 +17,8 @@ apps:
   shadowtest:
     command: bin/ShadowTest
     daemon: simple
+    environment:
+      PORT: 51292
     plugs:
       - network
       - network-bind
