@@ -1,6 +1,6 @@
 module ShadowTest
 
-go 1.17
+go 1.18
 
 require (
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
