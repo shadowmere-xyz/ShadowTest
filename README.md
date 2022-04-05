@@ -28,6 +28,8 @@ A demo service is deployed at https://sshadowtest.herokuapp.com/
 
 ### Run using snap
 
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/shadowtest)
+
 Run `snap install shadowtest` and the service will be exposed for you on port **51292**
 
 ### Run using docker
