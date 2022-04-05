@@ -2,6 +2,8 @@
 
 A service to test shadowsocks keys.
 
+[![Go](https://github.com/jadolg/ShadowTest/actions/workflows/go.yml/badge.svg)](https://github.com/jadolg/ShadowTest/actions/workflows/go.yml)
+
 ## How to use
 
 ### Start your server
