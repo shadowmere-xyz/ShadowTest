@@ -3,7 +3,7 @@ version: '1.1.0'
 summary: Web service to test shadowsocks keys
 description: Web service to test shadowsocks keys
 confinement: strict
-base: core18
+base: core20
 
 parts:
   docker-image-save:
