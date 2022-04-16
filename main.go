@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/phayes/freeport"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	"golang.org/x/net/proxy"
@@ -47,7 +48,9 @@ func main() {
 			return
 		}
 		details, err := getShadowsocksProxyDetails(address)
+		testsTotal.Inc()
 		if err != nil {
+			failuresTotal.Inc()
 			http.Error(w, fmt.Sprintf("Unable to get information for address %s", address), http.StatusBadGateway)
 			return
 		}
@@ -61,6 +64,8 @@ func main() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	port := os.Getenv("PORT")
 	if port == "" {
