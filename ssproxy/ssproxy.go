@@ -68,7 +68,7 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 			return
 		}
 
-		log.Info("proxy %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
+		log.Infof("proxy %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
 		if err = relay(rc, c); err != nil {
 			log.Warnf("relay error: %v", err)
 		}
