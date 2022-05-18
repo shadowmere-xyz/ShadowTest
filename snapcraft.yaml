@@ -1,5 +1,5 @@
 name: shadowtest
-version: '1.1.0'
+version: '1.2.0'
 summary: Web service to test shadowsocks keys
 description: Web service to test shadowsocks keys
 confinement: strict
