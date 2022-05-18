@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -38,7 +38,11 @@ func main() {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			fmt.Fprintf(w, "ParseForm() err: %v", err)
+			_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
+			if err != nil {
+				log.Errorf("impossible to write response %v", err)
+				return
+			}
 			http.Error(w, "Unable to parse request data", http.StatusBadRequest)
 			return
 		}
@@ -57,7 +61,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(details)
 		if err != nil {
-			log.Printf("error occurred when sending the data back to the client %v", err)
+			log.Errorf("error occurred when sending the data back to the client %v", err)
 		}
 	})
 
@@ -71,7 +75,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Starting server at port %s\n", port)
+	log.Infof("Starting server at port %s\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		log.Fatal(err)
 	}

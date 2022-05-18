@@ -3,8 +3,8 @@ package ssproxy
 import (
 	"errors"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"net"
 	"os"
 	"sync"
@@ -21,14 +21,14 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 	l, err := net.Listen("tcp", addr)
 	defer l.Close()
 	if err != nil {
-		log.Printf("failed to listen on %s: %v", addr, err)
+		log.Errorf("failed to listen on %s: %v", addr, err)
 		return
 	}
 	ready <- true
 
 	c, err := l.Accept()
 	if err != nil {
-		log.Printf("failed to accept: %s", err)
+		log.Errorf("failed to accept: %s", err)
 		return
 	}
 
@@ -46,31 +46,31 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 					if err, ok := err.(net.Error); ok && err.Timeout() {
 						continue
 					}
-					log.Printf("UDP Associate End.")
+					log.Info("UDP Associate End.")
 					return
 				}
 			}
 
-			log.Printf("failed to get target address: %v", err)
+			log.Errorf("failed to get target address: %v", err)
 			return
 		}
 
 		rc, err := net.Dial("tcp", server)
 		if err != nil {
-			log.Printf("failed to connect to server %v: %v", server, err)
+			log.Warnf("failed to connect to server %v: %v", server, err)
 			return
 		}
 		defer rc.Close()
 		rc = shadow(rc)
 
 		if _, err = rc.Write(tgt); err != nil {
-			log.Printf("failed to send target address: %v", err)
+			log.Warnf("failed to send target address: %v", err)
 			return
 		}
 
-		log.Printf("proxy %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
+		log.Info("proxy %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
 		if err = relay(rc, c); err != nil {
-			log.Printf("relay error: %v", err)
+			log.Warnf("relay error: %v", err)
 		}
 	}()
 }
