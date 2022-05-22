@@ -4,6 +4,7 @@ summary: Web service to test shadowsocks keys
 description: Web service to test shadowsocks keys
 confinement: strict
 base: core20
+license: Apache-2.0
 
 parts:
   shadowtest:
