@@ -2,23 +2,27 @@ package main
 
 import (
 	"ShadowTest/ssproxy"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+
+	_ "embed"
+	"net"
+	"net/url"
+	"strings"
 
 	"github.com/phayes/freeport"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	"golang.org/x/net/proxy"
-	"net"
-	"net/url"
-	"strings"
 )
 
 // WTFIsMyIPData is a data representation with the same structure returned by https://wtfismyip.com/json
@@ -31,22 +35,42 @@ type WTFIsMyIPData struct {
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
 }
 
+type Proxy struct {
+	Address string `json:"address"`
+}
+
+//go:embed index.html
+var indexFile embed.FS
+
 func main() {
 	http.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusNotFound)
 			return
 		}
-		if err := r.ParseForm(); err != nil {
-			_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
+		defer r.Body.Close()
+		address := ""
+		p := Proxy{}
+		if r.Header.Get("Content-Type") == "application/json" {
+			err := json.NewDecoder(r.Body).Decode(&p)
 			if err != nil {
-				log.Errorf("impossible to write response %v", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "Unable to parse request data", http.StatusBadRequest)
-			return
+			address = p.Address
+		} else {
+			if err := r.ParseForm(); err != nil {
+				_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
+				if err != nil {
+					log.Errorf("impossible to write response %v", err)
+					return
+				}
+				http.Error(w, "Unable to parse request data", http.StatusBadRequest)
+				return
+			}
+			address = r.FormValue("address")
 		}
-		address := r.FormValue("address")
+
 		if address == "" {
 			http.Error(w, "Missing address in the request", http.StatusBadRequest)
 			return
@@ -68,6 +92,9 @@ func main() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	var staticFS = http.FS(indexFile)
+	http.Handle("/", http.FileServer(staticFS))
 
 	http.Handle("/metrics", promhttp.Handler())
 

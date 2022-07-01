@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head>
+    <title>ShadowTest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+<div id="app" class="container">
+    <div class="row center-align" style="margin-top: 30px">
+         <pre>
+__ _               _               _____          _
+/ _\ |__   __ _  __| | _____      _/__   \___  ___| |_
+\ \| '_ \ / _` |/ _` |/ _ \ \ /\ / / / /\/ _ \/ __| __|
+_\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
+\__/_| |_|\__,_|\__,_|\___/ \_/\_/  \/   \___||___/\__|
+         </pre>
+    </div>
+    <div class="row center-align">
+        <span class="input-field">
+            <input class="waves-effect" v-on:keyup.enter="testProxy" v-model="proxy" type="text"/>
+        </span>
+        <a v-on:click="testProxy" class="btn-large red">
+            <i class="material-icons">vpn_key</i>
+        </a>
+        <h3 v-if="proxyStatus !== ''">Status: {{ proxyStatus }}</h3>
+        <h3 v-if="proxyLocation !== ''">Location: {{ proxyLocation }}</h3>
+    </div>
+</div>
+</body>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    const { createApp } = Vue
+
+    createApp({
+        data() {
+            return {
+                proxyStatus: '',
+                proxyLocation: '',
+                proxy: ''
+            }
+        },
+        methods: {
+            testProxy(){
+                axios.post('/v1/test',
+                    {
+                        'address': this.proxy
+                    }
+                ).then(response => {
+                    this.proxyStatus = 'Online';
+                    this.proxyLocation = response.data.YourFuckingLocation;
+                }).catch(error => {
+                    this.proxyStatus = 'Offline';
+                    this.proxyLocation = '';
+                });
+            }
+        }
+    }).mount('#app')
+</script>
+
+</html>
