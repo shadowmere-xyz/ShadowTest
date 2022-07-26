@@ -35,7 +35,7 @@ type WTFIsMyIPData struct {
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
 }
 
-type Proxy struct {
+type proxyJson struct {
 	Address string `json:"address"`
 }
 
@@ -50,7 +50,7 @@ func main() {
 		}
 		defer r.Body.Close()
 		address := ""
-		p := Proxy{}
+		p := proxyJson{}
 		if r.Header.Get("Content-Type") == "application/json" {
 			err := json.NewDecoder(r.Body).Decode(&p)
 			if err != nil {
