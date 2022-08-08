@@ -25,6 +25,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
         </a>
         <h3 v-if="proxyStatus !== ''">Status: {{ proxyStatus }}</h3>
         <h3 v-if="proxyLocation !== ''">Location: {{ proxyLocation }}</h3>
+        <h3 v-if="proxyLocation !== ''">Address: {{ proxyAddress }}</h3>
     </div>
 </div>
 </body>
@@ -42,6 +43,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
             return {
                 proxyStatus: '',
                 proxyLocation: '',
+                proxyAddress: '',
                 proxy: ''
             }
         },
@@ -53,9 +55,11 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                     }
                 ).then(response => {
                     this.proxyStatus = 'Online';
+                    this.proxyAddress = response.data.YourFuckingIPAddress;
                     this.proxyLocation = response.data.YourFuckingLocation;
                 }).catch(error => {
                     this.proxyStatus = 'Offline';
+                    this.proxyAddress = '';
                     this.proxyLocation = '';
                 });
             }
