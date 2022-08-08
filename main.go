@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -136,7 +137,11 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 5}
 	httpTransport.Dial = dialer.Dial
 	<-ready
-	response, err := httpClient.Get("https://wtfismyip.com/json")
+	wtfismyipURL := "https://wtfismyip.com/json"
+	if getEnvBool("IPV4_ONLY", false) {
+		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
+	}
+	response, err := httpClient.Get(wtfismyipURL)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
@@ -152,6 +157,19 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 		return WTFIsMyIPData{}, err
 	}
 	return data, nil
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	parseBool, err := strconv.ParseBool(value)
+	if err != nil {
+		log.Errorf("impossible to parse a bool from %s in your environment. Current value is: %s. Using default value (%t) instead.", key, value, fallback)
+		return fallback
+	}
+	return parseBool
 }
 
 func extractCredentialsFromBase64(address string) (string, error) {
