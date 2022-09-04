@@ -2,23 +2,28 @@ package main
 
 import (
 	"ShadowTest/ssproxy"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+
+	_ "embed"
+	"net"
+	"net/url"
+	"strings"
 
 	"github.com/phayes/freeport"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	"golang.org/x/net/proxy"
-	"net"
-	"net/url"
-	"strings"
 )
 
 // WTFIsMyIPData is a data representation with the same structure returned by https://wtfismyip.com/json
@@ -32,22 +37,42 @@ type WTFIsMyIPData struct {
 	RequestTime            string `json:"RequestTime"`
 }
 
+type proxyJson struct {
+	Address string `json:"address"`
+}
+
+//go:embed index.html
+var indexFile embed.FS
+
 func main() {
 	http.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusNotFound)
 			return
 		}
-		if err := r.ParseForm(); err != nil {
-			_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
+		defer r.Body.Close()
+		address := ""
+		p := proxyJson{}
+		if r.Header.Get("Content-Type") == "application/json" {
+			err := json.NewDecoder(r.Body).Decode(&p)
 			if err != nil {
-				log.Errorf("impossible to write response %v", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "Unable to parse request data", http.StatusBadRequest)
-			return
+			address = p.Address
+		} else {
+			if err := r.ParseForm(); err != nil {
+				_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
+				if err != nil {
+					log.Errorf("impossible to write response %v", err)
+					return
+				}
+				http.Error(w, "Unable to parse request data", http.StatusBadRequest)
+				return
+			}
+			address = r.FormValue("address")
 		}
-		address := r.FormValue("address")
+
 		if address == "" {
 			http.Error(w, "Missing address in the request", http.StatusBadRequest)
 			return
@@ -69,6 +94,9 @@ func main() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	var staticFS = http.FS(indexFile)
+	http.Handle("/", http.FileServer(staticFS))
 
 	http.Handle("/metrics", promhttp.Handler())
 
@@ -110,9 +138,15 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 5}
 	httpTransport.Dial = dialer.Dial
 	<-ready
-	start := time.Now()
-	response, err := httpClient.Get("https://wtfismyip.com/json")
-	requestTime := time.Since(start)
+  
+	wtfismyipURL := "https://wtfismyip.com/json"
+	if getEnvBool("IPV4_ONLY", false) {
+		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
+	}
+  start := time.Now()
+	response, err := httpClient.Get(wtfismyipURL)
+  requestTime := time.Since(start)
+
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
@@ -128,6 +162,19 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	}
 	data.RequestTime = fmt.Sprintf("%s", requestTime)
 	return data, nil
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	parseBool, err := strconv.ParseBool(value)
+	if err != nil {
+		log.Errorf("impossible to parse a bool from %s in your environment. Current value is: %s. Using default value (%t) instead.", key, value, fallback)
+		return fallback
+	}
+	return parseBool
 }
 
 func extractCredentialsFromBase64(address string) (string, error) {
