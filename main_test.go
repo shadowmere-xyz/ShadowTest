@@ -33,6 +33,7 @@ func TestGetProxyDetails(t *testing.T) {
 
 	assert.NotEmpty(t, details.YourFuckingIPAddress)
 	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.RequestTime)
 }
 
 func TestGetProxyDetailsWrongCredentials(t *testing.T) {
@@ -42,4 +43,5 @@ func TestGetProxyDetailsWrongCredentials(t *testing.T) {
 
 	assert.Empty(t, details.YourFuckingIPAddress)
 	assert.Empty(t, details.YourFuckingLocation)
+	assert.Empty(t, details.RequestTime)
 }

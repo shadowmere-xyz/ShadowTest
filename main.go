@@ -29,6 +29,7 @@ type WTFIsMyIPData struct {
 	YourFuckingISP         string `json:"YourFuckingISP"`
 	YourFuckingTorExit     bool   `json:"YourFuckingTorExit"`
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
+	RequestTime            string `json:"RequestTime"`
 }
 
 func main() {
@@ -109,11 +110,12 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 5}
 	httpTransport.Dial = dialer.Dial
 	<-ready
+	start := time.Now()
 	response, err := httpClient.Get("https://wtfismyip.com/json")
+	requestTime := time.Since(start)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
-
 	b, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return WTFIsMyIPData{}, err
@@ -124,6 +126,7 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
+	data.RequestTime = fmt.Sprintf("%s", requestTime)
 	return data, nil
 }
 
