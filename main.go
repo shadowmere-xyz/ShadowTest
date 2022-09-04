@@ -138,14 +138,14 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 5}
 	httpTransport.Dial = dialer.Dial
 	<-ready
-  
+
 	wtfismyipURL := "https://wtfismyip.com/json"
 	if getEnvBool("IPV4_ONLY", false) {
 		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
 	}
-  start := time.Now()
+	start := time.Now()
 	response, err := httpClient.Get(wtfismyipURL)
-  requestTime := time.Since(start)
+	requestTime := time.Since(start)
 
 	if err != nil {
 		return WTFIsMyIPData{}, err
