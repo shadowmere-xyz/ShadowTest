@@ -110,7 +110,10 @@ func main() {
 }
 
 func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
-	addr, cipher, password, err := parseURL(address)
+	escapedAddress := strings.Replace(address, "\n", "", -1)
+	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
+
+	addr, cipher, password, err := parseURL(escapedAddress)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
