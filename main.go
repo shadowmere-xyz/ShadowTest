@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -149,7 +149,7 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 		return WTFIsMyIPData{}, err
 	}
 
-	b, err := ioutil.ReadAll(response.Body)
+	b, err := io.ReadAll(response.Body)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
