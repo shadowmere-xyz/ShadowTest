@@ -144,7 +144,12 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	if getEnvBool("IPV4_ONLY", false) {
 		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
 	}
-	response, err := httpClient.Get(wtfismyipURL)
+	request, err := http.NewRequest("GET", wtfismyipURL, nil)
+	if err != nil {
+		return WTFIsMyIPData{}, err
+	}
+	request.Header.Set("User-Agent", "ShadowTest")
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
