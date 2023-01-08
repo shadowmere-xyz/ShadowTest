@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"io"
 	"net/http"
 	"os"
@@ -44,6 +45,19 @@ type proxyJson struct {
 var indexFile embed.FS
 
 func main() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+	if sentryDsn != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              sentryDsn,
+			TracesSampleRate: 0.1,
+		})
+		if err != nil {
+			log.Fatalf("sentry.Init: %s", err)
+		}
+	} else {
+		log.Warn("SENTRY_DSN was not provided. Running without sentry.")
+	}
+
 	http.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusNotFound)
