@@ -151,7 +151,7 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	}
 
 	httpTransport := &http.Transport{}
-	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 5}
+	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 30}
 	httpTransport.Dial = dialer.Dial
 	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"
