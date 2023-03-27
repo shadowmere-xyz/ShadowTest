@@ -1,0 +1,13 @@
+service:
+  port: 8080
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+image:
+  repository: guamulo/shadowtest
+  tag: latest
