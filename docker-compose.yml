@@ -12,4 +12,4 @@ services:
     ports:
       - "7997-7999:8080"
     env_file:
-      - .env.shadowtest
+      - .env
