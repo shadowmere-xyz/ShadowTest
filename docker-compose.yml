@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  shadowtest:
+    image: guamulo/shadowtest:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+    ports:
+      - "7997-7999:8080"
+    env_file:
+      - .env.shadowtest
