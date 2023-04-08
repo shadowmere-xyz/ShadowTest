@@ -39,6 +39,7 @@ type WTFIsMyIPData struct {
 
 type proxyJson struct {
 	Address string `json:"address"`
+	Timeout int    `json:"timeout,omitempty"`
 }
 
 //go:embed index.html
@@ -65,6 +66,14 @@ func main() {
 		}
 		defer r.Body.Close()
 		address := ""
+
+		timeout, err := getDefaultTimeout()
+		if err != nil {
+			log.Errorf("impossible to get default timeout %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
 		p := proxyJson{}
 		if r.Header.Get("Content-Type") == "application/json" {
 			err := json.NewDecoder(r.Body).Decode(&p)
@@ -73,6 +82,10 @@ func main() {
 				return
 			}
 			address = p.Address
+
+			if p.Timeout > 0 {
+				timeout = p.Timeout
+			}
 		} else {
 			if err := r.ParseForm(); err != nil {
 				_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
@@ -84,13 +97,21 @@ func main() {
 				return
 			}
 			address = r.FormValue("address")
+			if r.FormValue("timeout") != "" {
+				timeout, err = strconv.Atoi(r.FormValue("timeout"))
+				if err != nil {
+					http.Error(w, "Unable to parse timeout", http.StatusBadRequest)
+					return
+				}
+			}
 		}
 
 		if address == "" {
 			http.Error(w, "Missing address in the request", http.StatusBadRequest)
 			return
 		}
-		details, err := getShadowsocksProxyDetails(address)
+
+		details, err := getShadowsocksProxyDetails(address, timeout)
 		testsTotal.Inc()
 		if err != nil {
 			failuresTotal.Inc()
@@ -123,7 +144,21 @@ func main() {
 	}
 }
 
-func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
+func getDefaultTimeout() (int, error) {
+	timeout := 30
+	timeoutFromEnv := os.Getenv("TIMEOUT")
+	if timeoutFromEnv != "" {
+		timeoutInt, err := strconv.Atoi(timeoutFromEnv)
+		if err != nil {
+			return 0, err
+		} else {
+			timeout = timeoutInt
+		}
+	}
+	return timeout, nil
+}
+
+func getShadowsocksProxyDetails(address string, timeout int) (WTFIsMyIPData, error) {
 	escapedAddress := strings.Replace(address, "\n", "", -1)
 	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
 
@@ -151,7 +186,8 @@ func getShadowsocksProxyDetails(address string) (WTFIsMyIPData, error) {
 	}
 
 	httpTransport := &http.Transport{}
-	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 30}
+	timeoutDuration := time.Duration(timeout) * time.Second
+	httpClient := &http.Client{Transport: httpTransport, Timeout: timeoutDuration}
 	httpTransport.Dial = dialer.Dial
 	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"

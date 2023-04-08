@@ -29,7 +29,7 @@ func TestParseURLNoBase64(t *testing.T) {
 
 func TestGetProxyDetails(t *testing.T) {
 	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@localhost:6276/?outline=1"
-	details, err := getShadowsocksProxyDetails(address)
+	details, err := getShadowsocksProxyDetails(address, 30)
 	assert.NoError(t, err)
 
 	assert.NotEmpty(t, details.YourFuckingIPAddress)
@@ -38,7 +38,7 @@ func TestGetProxyDetails(t *testing.T) {
 
 func TestGetProxyDetailsWrongCredentials(t *testing.T) {
 	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpiYWRwYXNzd29yZA@localhost:6276/?outline=1"
-	details, err := getShadowsocksProxyDetails(address)
+	details, err := getShadowsocksProxyDetails(address, 30)
 	assert.Error(t, err)
 
 	assert.Empty(t, details.YourFuckingIPAddress)
