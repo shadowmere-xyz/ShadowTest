@@ -18,7 +18,7 @@ type proxyJson struct {
 //go:embed index.html
 var indexFile embed.FS
 
-func getRouter(ipv4_only bool) (*http.ServeMux, error) {
+func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func getRouter(ipv4_only bool) (*http.ServeMux, error) {
 			http.Error(w, "Missing address in the request", http.StatusBadRequest)
 			return
 		}
-		details, err := ssproxy.GetShadowsocksProxyDetails(address, ipv4_only)
+		details, err := ssproxy.GetShadowsocksProxyDetails(address, ipv4Only)
 		testsTotal.Inc()
 		if err != nil {
 			failuresTotal.Inc()

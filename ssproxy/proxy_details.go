@@ -26,7 +26,7 @@ type WTFIsMyIPData struct {
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
 }
 
-func GetShadowsocksProxyDetails(address string, ipv4_only bool) (WTFIsMyIPData, error) {
+func GetShadowsocksProxyDetails(address string, ipv4Only bool) (WTFIsMyIPData, error) {
 	escapedAddress := strings.Replace(address, "\n", "", -1)
 	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
 
@@ -58,7 +58,7 @@ func GetShadowsocksProxyDetails(address string, ipv4_only bool) (WTFIsMyIPData, 
 	httpTransport.Dial = dialer.Dial
 	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"
-	if ipv4_only {
+	if ipv4Only {
 		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
 	}
 	request, err := http.NewRequest("GET", wtfismyipURL, nil)
