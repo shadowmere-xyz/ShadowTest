@@ -26,6 +26,7 @@ type WTFIsMyIPData struct {
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
 }
 
+// GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
 func GetShadowsocksProxyDetails(address string, ipv4Only bool) (WTFIsMyIPData, error) {
 	escapedAddress := strings.Replace(address, "\n", "", -1)
 	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
