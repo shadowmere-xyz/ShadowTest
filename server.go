@@ -47,7 +47,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		if r.Header.Get("Content-Type") == "application/json" {
 			address, timeout, done = getAddressAndTimeoutFromJSON(w, r, p, address, timeout)
 		} else {
-			address, timeout, err, done = getAddressAndTimeoutFromForm(w, r, address, timeout, err)
+			address, timeout, done = getAddressAndTimeoutFromForm(w, r, address, timeout, err)
 		}
 		if done {
 			return
@@ -103,25 +103,25 @@ func closeBody(r *http.Request) {
 	}(r.Body)
 }
 
-func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, address string, timeout int, err error) (string, int, error, bool) {
+func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, address string, timeout int, err error) (string, int, bool) {
 	if err := r.ParseForm(); err != nil {
 		_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
 		if err != nil {
 			log.Errorf("impossible to write response %v", err)
-			return "", 0, nil, true
+			return "", 0, true
 		}
 		http.Error(w, "Unable to parse request data", http.StatusBadRequest)
-		return "", 0, nil, true
+		return "", 0, true
 	}
 	address = r.FormValue("address")
 	if r.FormValue("timeout") != "" {
 		timeout, err = strconv.Atoi(r.FormValue("timeout"))
 		if err != nil {
 			http.Error(w, "Unable to parse timeout", http.StatusBadRequest)
-			return "", 0, nil, true
+			return "", 0, true
 		}
 	}
-	return address, timeout, err, false
+	return address, timeout, false
 }
 
 func getAddressAndTimeoutFromJSON(w http.ResponseWriter, r *http.Request, p proxyJson, address string, timeout int) (string, int, bool) {
