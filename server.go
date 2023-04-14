@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
 	"io"
 	"net"
 	"net/http"
@@ -113,7 +114,7 @@ func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, addres
 		http.Error(w, "Unable to parse request data", http.StatusBadRequest)
 		return "", 0, true
 	}
-	address = r.FormValue("address")
+	address = html.EscapeString(r.FormValue("address"))
 	if r.FormValue("timeout") != "" {
 		timeout, err = strconv.Atoi(r.FormValue("timeout"))
 		if err != nil {
@@ -130,7 +131,7 @@ func getAddressAndTimeoutFromJSON(w http.ResponseWriter, r *http.Request, p prox
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return "", 0, true
 	}
-	address = p.Address
+	address = html.EscapeString(p.Address)
 	if p.Timeout > 0 {
 		timeout = p.Timeout
 	}
