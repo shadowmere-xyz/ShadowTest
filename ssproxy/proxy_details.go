@@ -27,7 +27,7 @@ type WTFIsMyIPData struct {
 }
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
-func GetShadowsocksProxyDetails(address string, ipv4Only bool) (WTFIsMyIPData, error) {
+func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
 	escapedAddress := strings.Replace(address, "\n", "", -1)
 	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
 
@@ -55,7 +55,8 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool) (WTFIsMyIPData, e
 	}
 
 	httpTransport := &http.Transport{}
-	httpClient := &http.Client{Transport: httpTransport, Timeout: time.Second * 30}
+	timeoutDuration := time.Duration(timeout) * time.Second
+	httpClient := &http.Client{Transport: httpTransport, Timeout: timeoutDuration}
 	httpTransport.Dial = dialer.Dial
 	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"

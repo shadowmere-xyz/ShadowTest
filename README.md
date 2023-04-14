@@ -15,6 +15,7 @@ Using curl, call te test endpoint with a SIP002 compatible address:
 - 4xx: You are either requesting the wrong URL or passing bad data to the server
 - 502: There was an error getting data for this address which means either the address is invalid or the server is
   offline
+- 504: There was a timeout getting data for this address
 
 ## Demo service
 

@@ -44,3 +44,19 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	assert.NotEmpty(t, details.YourFuckingIPAddress)
 	assert.NotEmpty(t, details.YourFuckingLocation)
 }
+
+func TestGetProxyDetailsFromServerTimeout(t *testing.T) {
+	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@shadowtest.akiel.dev:6276"
+
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\", \"timeout\": 1 }", address)))
+	req, _ := http.NewRequest("POST", "/v1/test", body)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusGatewayTimeout, rr.Code)
+}
