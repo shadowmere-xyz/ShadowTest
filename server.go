@@ -43,7 +43,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 
 		p := proxyJson{}
 
-		var done = false
+		var done bool
 		if r.Header.Get("Content-Type") == "application/json" {
 			address, timeout, done = getAddressAndTimeoutFromJSON(w, r, p, address, timeout)
 		} else {
