@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   selector:
+    matchLabels:
       {{- include "shadowtest.selectorLabels" . | nindent 6 }}
   endpoints:
     - port: http
