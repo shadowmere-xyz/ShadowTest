@@ -94,6 +94,8 @@ func extractCredentialsFromBase64(address string) (string, error) {
 		return "", err
 	}
 
+	creds = strings.ReplaceAll(creds, "/", "%2F")
+
 	return strings.ReplaceAll(address, key, creds), nil
 }
 
