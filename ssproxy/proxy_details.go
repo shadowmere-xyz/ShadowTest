@@ -24,6 +24,8 @@ type WTFIsMyIPData struct {
 	YourFuckingISP         string `json:"YourFuckingISP"`
 	YourFuckingTorExit     bool   `json:"YourFuckingTorExit"`
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
+	YourFuckingCity        string `json:"YourFuckingCity"`
+	YourFuckingCountry     string `json:"YourFuckingCountry"`
 }
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
