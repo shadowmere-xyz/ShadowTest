@@ -88,10 +88,14 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 }
 
 func fillCheckError(w http.ResponseWriter, err error, address string) {
+	message := fmt.Sprintf("Unable to get information for address %s", address)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
-		http.Error(w, fmt.Sprintf("Timeout getting information for address %s", address), http.StatusGatewayTimeout)
-	} else {
-		http.Error(w, fmt.Sprintf("Unable to get information for address %s", address), http.StatusBadGateway)
+		message = fmt.Sprintf("Timeout getting information for address %s", address)
+	}
+
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		log.Errorf("Impossible to write response %v", err)
 	}
 }
 
