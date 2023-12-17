@@ -54,11 +54,17 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                         'address': this.proxy
                     }
                 ).then(response => {
-                    this.proxyStatus = 'Online';
-                    this.proxyAddress = response.data.YourFuckingIPAddress;
-                    this.proxyLocation = response.data.YourFuckingLocation;
+                    if (typeof response.data === 'string' && response.data.startsWith('Unable to get information for address')) {
+                        this.proxyStatus = 'Offline';
+                        this.proxyAddress = '';
+                        this.proxyLocation = '';
+                    } else {
+                        this.proxyStatus = 'Online';
+                        this.proxyAddress = response.data.YourFuckingIPAddress;
+                        this.proxyLocation = response.data.YourFuckingLocation;
+                    }
                 }).catch(error => {
-                    this.proxyStatus = 'Offline';
+                    this.proxyStatus = 'Server Error';
                     this.proxyAddress = '';
                     this.proxyLocation = '';
                 });
