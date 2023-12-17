@@ -20,7 +20,7 @@ type proxyJson struct {
 	Timeout int    `json:"timeout,omitempty"`
 }
 
-type ErrorResponse struct {
+type errorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -99,7 +99,7 @@ func fillCheckError(w http.ResponseWriter, err error, address string) {
 		message = fmt.Sprintf("Timeout getting information for address %s", address)
 	}
 
-	response := ErrorResponse{Error: message}
+	response := errorResponse{Error: message}
 	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
