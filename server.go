@@ -48,6 +48,12 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 			return
 		}
 
+		if ssproxy.IsWTFIsMyIpOffline() {
+			log.Errorf("https://wtfismyip.com is having problems %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
 		p := proxyJson{}
 
 		var done bool

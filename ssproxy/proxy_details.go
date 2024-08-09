@@ -7,6 +7,7 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
 	"io"
 	"net"
@@ -26,6 +27,25 @@ type WTFIsMyIPData struct {
 	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
 	YourFuckingCity        string `json:"YourFuckingCity"`
 	YourFuckingCountry     string `json:"YourFuckingCountry"`
+}
+
+func IsWTFIsMyIpOffline() bool {
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	resp, err := client.Get("https://wtfismyip.com/test")
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return true
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Errorf("impossible to close response body %v", err)
+		}
+	}(resp.Body)
+
+	return false
 }
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
