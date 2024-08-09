@@ -36,7 +36,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		defer closeBody(r)
 
 		if r.Method != "POST" {
-			http.Error(w, "Method is not supported.", http.StatusNotFound)
+			http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 			return
 		}
 		address := ""
@@ -44,6 +44,12 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		timeout, err := getDefaultTimeout()
 		if err != nil {
 			log.Errorf("impossible to get default timeout %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if ssproxy.IsWTFIsMyIpOffline() {
+			log.Errorf("https://wtfismyip.com is having problems %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
