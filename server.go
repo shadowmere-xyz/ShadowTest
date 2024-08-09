@@ -36,7 +36,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		defer closeBody(r)
 
 		if r.Method != "POST" {
-			http.Error(w, "Method is not supported.", http.StatusNotFound)
+			http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 			return
 		}
 		address := ""
