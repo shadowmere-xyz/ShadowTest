@@ -7,7 +7,7 @@ toolchain go1.22.2
 require (
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
-	github.com/prometheus/client_golang v1.20.2
+	github.com/prometheus/client_golang v1.20.3
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/slok/go-http-metrics v0.12.0
