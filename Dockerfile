@@ -1,8 +1,13 @@
 FROM golang:1.23 as build
 
-ADD . /app
 WORKDIR /app
 
+COPY go.mod go.sum .
+RUN go mod download
+
+ADD . /app
+
+RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build
 
 FROM alpine:3.20

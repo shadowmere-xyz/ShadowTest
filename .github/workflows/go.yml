@@ -22,7 +22,9 @@ jobs:
           go-version-file: go.mod
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          go mod tidy
+          go build -v ./...
 
       - name: Test
         run: make test
