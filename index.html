@@ -49,6 +49,9 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
         },
         methods: {
             testProxy() {
+                this.proxyStatus = 'Testing...';
+                this.proxyAddress = '';
+                this.proxyLocation = '';
                 axios.post('/v2/test',
                     {
                         'address': this.proxy
