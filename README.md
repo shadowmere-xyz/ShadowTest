@@ -19,7 +19,7 @@ Using curl, call te test endpoint with a SIP002 compatible address:
 
 ## Demo service
 
-A demo service is deployed at https://sshadowtest.herokuapp.com/
+A demo service is deployed at https://shadowtest.akiel.dev/
 
 ## Deploy
 
