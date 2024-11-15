@@ -1,7 +1,8 @@
 module ShadowTest
 
-go 1.22
-toolchain go1.23.1
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/getsentry/sentry-go v0.29.1
