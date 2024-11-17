@@ -21,7 +21,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
             <input class="waves-effect" v-on:keyup.enter="testProxy" v-model="proxy" placeholder="ss://abeatifulkey" type="text"/>
         </span>
         <a v-on:click="testProxy" class="btn-large red">
-            <i class="material-icons">vpn_key</i>
+            <i class="material-icons">refresh</i>
         </a>
         <h3 v-if="proxyStatus !== ''">Status: {{ proxyStatus }}</h3>
         <h3 v-if="proxyLocation !== ''">Location: {{ proxyLocation }}</h3>
@@ -65,8 +65,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                         this.proxyLocation = response.data.YourFuckingLocation;
                     }
                 }).catch(error => {
-                    this.proxyStatus = 'Server Error';
-                    console.log(error);
+                    this.proxyStatus = 'Error '+error.response.data;
                 });
             }
         }
