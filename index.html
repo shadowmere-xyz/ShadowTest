@@ -18,7 +18,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
     </div>
     <div class="row center-align">
         <span class="input-field">
-            <input class="waves-effect" v-on:keyup.enter="testProxy" v-model="proxy" type="text"/>
+            <input class="waves-effect" v-on:keyup.enter="testProxy" v-model="proxy" placeholder="ss://abeatifulkey" type="text"/>
         </span>
         <a v-on:click="testProxy" class="btn-large red">
             <i class="material-icons">vpn_key</i>
@@ -59,8 +59,6 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                 ).then(response => {
                     if (response.data.error !== undefined) {
                         this.proxyStatus = 'Offline';
-                        this.proxyAddress = '';
-                        this.proxyLocation = '';
                     } else {
                         this.proxyStatus = 'Online';
                         this.proxyAddress = response.data.YourFuckingIPAddress;
@@ -68,8 +66,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                     }
                 }).catch(error => {
                     this.proxyStatus = 'Server Error';
-                    this.proxyAddress = '';
-                    this.proxyLocation = '';
+                    console.log(error);
                 });
             }
         }
