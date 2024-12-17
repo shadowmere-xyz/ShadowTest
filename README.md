@@ -32,3 +32,13 @@ Run `snap install shadowtest` and the service will be exposed for you on port **
 ### Run using docker
 
 Run `docker run -p 8080:8080 -d guamulo/shadowtest` to get it running with docker on port **8080**
+
+### From the terminal
+
+Add the following function to your **bashrc** to query the service from your terminal
+
+```bash
+function shadowtest(){
+  curl --silent localhost:51292/v2/test -d "address=$1" | jq
+}
+```
