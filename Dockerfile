@@ -9,7 +9,7 @@ COPY . /app
 
 RUN CGO_ENABLED=0 GOOS=linux go build
 
-FROM alpine:3.20
+FROM alpine:3.21
 COPY --from=build /app/ShadowTest /usr/bin/
 
 ENV APP_USER=shadowtest
