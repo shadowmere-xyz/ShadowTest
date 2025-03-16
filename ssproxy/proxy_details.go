@@ -130,7 +130,7 @@ func base64DecodeStripped(s string) (string, error) {
 }
 
 func parseURL(s string) (addr, cipher, password string, err error) {
-	if !strings.HasPrefix(s, "ss://") {
+	if !strings.HasPrefix(s, "ss://") || !strings.Contains(s, "@") {
 		return "", "", "", fmt.Errorf("address %s does not seem to be a shadowsocks SIP002 address", s)
 	}
 	s, err = extractCredentialsFromBase64(s)
