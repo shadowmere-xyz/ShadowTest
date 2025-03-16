@@ -27,6 +27,9 @@ type errorResponse struct {
 //go:embed index.html
 var indexFile embed.FS
 
+//go:embed favicon.ico
+var faviconFile embed.FS
+
 func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +98,9 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux.Handle("/", http.FileServer(staticFS))
 
 	mux.Handle("/metrics", promhttp.Handler())
+
+	var faviconFS = http.FS(faviconFile)
+	mux.Handle("/favicon.ico", http.FileServer(faviconFS))
 
 	return mux, nil
 }
