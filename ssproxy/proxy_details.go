@@ -29,23 +29,35 @@ type WTFIsMyIPData struct {
 	YourFuckingCountry     string `json:"YourFuckingCountry"`
 }
 
+var offlineCache safeIsOfflineCache
+
 func IsWTFIsMyIpOffline() bool {
+	if !(offlineCache.expired() || offlineCache.isZero()) {
+		return offlineCache.getIsOfflineFromCache()
+	}
+
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 	}
 
 	resp, err := client.Get("https://wtfismyip.com/test")
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return true
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Errorf("impossible to close response body %v", err)
-		}
-	}(resp.Body)
 
-	return false
+	if err != nil || resp.StatusCode != http.StatusOK {
+		offlineCache.setIsOfflineToCache(true, 5*time.Minute)
+	} else {
+		offlineCache.setIsOfflineToCache(false, 5*time.Minute)
+	}
+
+	if resp != nil && resp.Body != nil {
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				log.Errorf("impossible to close response body %v", err)
+			}
+		}(resp.Body)
+	}
+
+	return offlineCache.getIsOfflineFromCache()
 }
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
