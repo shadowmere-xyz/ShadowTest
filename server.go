@@ -24,6 +24,11 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
+type version struct {
+	GitCommit string `json:"git_commit"`
+	Version   string `json:"version"`
+}
+
 //go:embed index.html
 var indexFile embed.FS
 
@@ -92,6 +97,14 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
+	})
+
+	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(version{
+			GitCommit: GitCommit,
+			Version:   Version,
+		})
 	})
 
 	var staticFS = http.FS(indexFile)

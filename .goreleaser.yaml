@@ -11,6 +11,8 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - '-X main.Version={{.Version}} -X main.GitCommit={{.Commit}}'
 checksum:
   name_template: 'checksums.txt'
 snapshot:

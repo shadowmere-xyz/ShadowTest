@@ -6,7 +6,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
@@ -34,21 +34,31 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
             <h4 v-if="proxyLocation !== ''"><b>Address:</b> {{ proxyAddress }}</h4>
             <h4 v-if="proxyISP !== ''"><b>ISP:</b> {{ proxyISP }}</h4>
         </div>
+        <p v-if="version !== ''" style="position: fixed; bottom: 0; width: 100%; text-align: center; background-color: #f8f8f8; padding: 10px;">
+            Version: {{ version }} Commit: {{ commit }}
+        </p>
     </div>
 </div>
 </body>
-
 <script>
     const {createApp} = Vue
 
     createApp({
         data() {
+            axios.get('/version').then(response => {
+                this.version = response.data.version;
+                this.commit = response.data.git_commit;
+            }).catch(error => {
+                console.log('Error fetching version:', error);
+            })
             return {
                 proxyStatus: '',
                 proxyLocation: '',
                 proxyAddress: '',
                 proxyISP: '',
-                proxy: ''
+                proxy: '',
+                version: '',
+                commit: ''
             }
         },
         methods: {
