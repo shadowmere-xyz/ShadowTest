@@ -7,7 +7,9 @@ RUN go mod download
 
 COPY . /app
 
-RUN CGO_ENABLED=0 GOOS=linux go build
+ARG VERSION
+ARG COMMIT
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Version=$VERSION -X main.GitCommit=$COMMIT"
 
 FROM alpine:3.21
 COPY --from=build /app/ShadowTest /usr/bin/

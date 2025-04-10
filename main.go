@@ -15,6 +15,11 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 )
 
+var (
+	Version   = "dev"
+	GitCommit = "HEAD"
+)
+
 func main() {
 	sentryDsn := os.Getenv("SENTRY_DSN")
 	if sentryDsn != "" {
