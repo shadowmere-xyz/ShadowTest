@@ -34,10 +34,10 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
             <h4 v-if="proxyLocation !== ''"><b>Address:</b> {{ proxyAddress }}</h4>
             <h4 v-if="proxyISP !== ''"><b>ISP:</b> {{ proxyISP }}</h4>
         </div>
-        <p v-if="version !== ''" style="position: fixed; bottom: 0; width: 100%; text-align: center; background-color: #f8f8f8; padding: 10px;">
-            Version: {{ version }} Commit: {{ commit }}
-        </p>
     </div>
+    <p v-if="version !== ''" style="position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; background-color: #f8f8f8; padding: 10px; margin: 0; z-index: 1000;">
+        Version: {{ version }} Commit: {{ commit }}
+    </p>
 </div>
 </body>
 <script>
