@@ -3,7 +3,7 @@ module ShadowTest
 go 1.24
 
 require (
-	github.com/getsentry/sentry-go v0.32.0
+	github.com/getsentry/sentry-go v0.33.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.22.0
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5
