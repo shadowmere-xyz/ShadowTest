@@ -11,7 +11,7 @@ ARG VERSION
 ARG COMMIT
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Version=$VERSION -X main.GitCommit=$COMMIT"
 
-FROM alpine:3.21
+FROM alpine:3.22
 COPY --from=build /app/ShadowTest /usr/bin/
 
 ENV APP_USER=shadowtest
