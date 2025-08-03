@@ -41,8 +41,6 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		http.Error(w, "Deprecated endpoint. Use v2 instead.", http.StatusNotFound)
 	})
 	mux.HandleFunc("/v2/test", func(w http.ResponseWriter, r *http.Request) {
-		defer closeBody(r)
-
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 			return
@@ -70,6 +68,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		} else {
 			address, timeout, done = getAddressAndTimeoutFromForm(w, r, address, timeout, err)
 		}
+		closeBody(r)
 		if done {
 			return
 		}
