@@ -16,7 +16,9 @@ import (
 )
 
 var (
-	Version   = "dev"
+	// Version is set by the build system.
+	Version = "dev"
+	// GitCommit is set by the build system.
 	GitCommit = "HEAD"
 )
 

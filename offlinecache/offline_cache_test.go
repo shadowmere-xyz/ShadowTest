@@ -1,4 +1,4 @@
-package offline_cache
+package offlinecache
 
 import (
 	"github.com/stretchr/testify/assert"
