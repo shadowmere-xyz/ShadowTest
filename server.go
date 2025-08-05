@@ -40,7 +40,10 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Deprecated endpoint. Use v2 instead.", http.StatusNotFound)
 	})
+	const ContentType = "Content-Type"
+	const ContentTypeJson = "application/json"
 	mux.HandleFunc("/v2/test", func(w http.ResponseWriter, r *http.Request) {
+		defer closeBody(r)
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 			return
@@ -62,14 +65,13 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 
 		p := proxyJson{}
 
-		var done bool
-		if r.Header.Get("Content-Type") == "application/json" {
-			address, timeout, done = getAddressAndTimeoutFromJSON(w, r, p, address, timeout)
+		if r.Header.Get(ContentType) == ContentTypeJson {
+			address, timeout, err = getAddressAndTimeoutFromJSON(r, p, address, timeout)
 		} else {
-			address, timeout, done = getAddressAndTimeoutFromForm(w, r, address, timeout, err)
+			address, timeout, err = getAddressAndTimeoutFromForm(r, address, timeout, err)
 		}
-		closeBody(r)
-		if done {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -86,7 +88,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(ContentType, ContentTypeJson)
 		err = json.NewEncoder(w).Encode(details)
 
 		if err != nil {
@@ -99,7 +101,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	})
 
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(ContentType, ContentTypeJson)
 		_ = json.NewEncoder(w).Encode(version{
 			GitCommit: GitCommit,
 			Version:   Version,
@@ -140,38 +142,30 @@ func closeBody(r *http.Request) {
 	}(r.Body)
 }
 
-func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, address string, timeout int, err error) (string, int, bool) {
+func getAddressAndTimeoutFromForm(r *http.Request, address string, timeout int, err error) (string, int, error) {
 	if err := r.ParseForm(); err != nil {
-		_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
-		if err != nil {
-			log.Errorf("impossible to write response %v", err)
-			return "", 0, true
-		}
-		http.Error(w, "Unable to parse request data", http.StatusBadRequest)
-		return "", 0, true
+		return "", 0, fmt.Errorf("unable to parse request data")
 	}
 	address = html.EscapeString(r.FormValue("address"))
 	if r.FormValue("timeout") != "" {
 		timeout, err = strconv.Atoi(r.FormValue("timeout"))
 		if err != nil {
-			http.Error(w, "Unable to parse timeout", http.StatusBadRequest)
-			return "", 0, true
+			return "", 0, fmt.Errorf("unable to parse timeout")
 		}
 	}
-	return address, timeout, false
+	return address, timeout, nil
 }
 
-func getAddressAndTimeoutFromJSON(w http.ResponseWriter, r *http.Request, p proxyJson, address string, timeout int) (string, int, bool) {
+func getAddressAndTimeoutFromJSON(r *http.Request, p proxyJson, address string, timeout int) (string, int, error) {
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", 0, true
+		return "", 0, err
 	}
 	address = html.EscapeString(p.Address)
 	if p.Timeout > 0 {
 		timeout = p.Timeout
 	}
-	return address, timeout, false
+	return address, timeout, nil
 }
 
 func getDefaultTimeout() (int, error) {
