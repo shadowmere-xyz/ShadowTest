@@ -46,6 +46,29 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	assert.NotEmpty(t, details.YourFuckingLocation)
 }
 
+func TestGetProxyDetailsFromServerForm(t *testing.T) {
+	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@localhost:6276/?outline=1"
+
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(fmt.Sprintf("address=%s", address)))
+	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	details := ssproxy.WTFIsMyIPData{}
+	err = json.NewDecoder(rr.Body).Decode(&details)
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, details.YourFuckingIPAddress)
+	assert.NotEmpty(t, details.YourFuckingLocation)
+}
+
 func TestGetProxyDetailsFromServerTimeout(t *testing.T) {
 	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@shadowtest.akiel.dev:6276"
 
