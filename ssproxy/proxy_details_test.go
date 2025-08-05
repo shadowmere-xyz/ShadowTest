@@ -1,7 +1,11 @@
 package ssproxy
 
 import (
+	"ShadowTest/offline_cache"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -54,4 +58,40 @@ func TestGetProxyDetailsWrongCredentials(t *testing.T) {
 
 	assert.Empty(t, details.YourFuckingIPAddress)
 	assert.Empty(t, details.YourFuckingLocation)
+}
+
+func TestIsWTFIsMyIpOffline_Online(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
+	assert.False(t, offline)
+}
+
+func TestIsWTFIsMyIpOffline_Offline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
+	assert.True(t, offline)
+}
+
+func TestIsWTFIsMyIpOffline_ConnectionError(t *testing.T) {
+	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offline := IsWTFIsMyIpOffline(&offlineCache, "http://127.0.0.1:0")
+	assert.True(t, offline)
+}
+
+func TestIsWTFIsMyIpOffline_UsesCache(t *testing.T) {
+	offlineCache := &offline_cache.SafeIsOfflineCache{}
+	offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
+
+	result := IsWTFIsMyIpOffline(offlineCache, "http://127.0.0.1:0")
+	assert.True(t, result)
 }

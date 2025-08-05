@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -69,13 +70,29 @@ func TestGetProxyDetailsFromServerForm(t *testing.T) {
 	assert.NotEmpty(t, details.YourFuckingLocation)
 }
 
-func TestGetProxyDetailsFromServerTimeout(t *testing.T) {
+func TestGetProxyDetailsFromServerJSONTimeout(t *testing.T) {
 	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@shadowtest.akiel.dev:6276"
 
 	router, err := getRouter(true)
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\", \"timeout\": 1 }", address)))
+	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestGetProxyDetailsFromServerJSONWithoutTimeout(t *testing.T) {
+	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@localhost:6276/?outline=1"
+
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", address)))
 	req, _ := http.NewRequest("POST", "/v2/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -99,4 +116,74 @@ func TestDeprecatedV1(t *testing.T) {
 	content, err := io.ReadAll(rr.Body)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("Deprecated endpoint. Use v2 instead.\n"), content)
+}
+
+func TestTestMethodNotAllowed(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	req, _ := http.NewRequest("GET", "/v2/test", nil)
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	assert.Equal(t, "Method is not supported.\n", rr.Body.String())
+}
+
+func TestTestDefaultTimeoutError(t *testing.T) {
+	os.Setenv("TIMEOUT", "invalid")
+	defer os.Unsetenv("TIMEOUT")
+
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(`{ "address": "test" }`))
+	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "unable to get default timeout: strconv.Atoi: parsing \"invalid\": invalid syntax\n", rr.Body.String())
+}
+
+func TestTestFormData(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	form := "address=test_address&timeout=15"
+	req, _ := http.NewRequest("POST", "/v2/test", bytes.NewBufferString(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestTestMissingAddress(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(`{}`))
+	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "missing address in the request\n", rr.Body.String())
+}
+
+func TestTestInvalidTimeoutForm(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	form := "address=test_address&timeout=notanumber"
+	req, _ := http.NewRequest("POST", "/v2/test", bytes.NewBufferString(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "unable to parse timeout\n", rr.Body.String())
 }
