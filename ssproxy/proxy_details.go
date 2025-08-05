@@ -31,6 +31,7 @@ type WTFIsMyIPData struct {
 	YourFuckingCountry     string `json:"YourFuckingCountry"`
 }
 
+// IsWTFIsMyIpOffline checks if wtfismyip.com is offline by making a request to a test URL
 func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL string) bool {
 	if !offlineCache.Expired() && !offlineCache.IsZero() {
 		return offlineCache.GetIsOfflineFromCache()
