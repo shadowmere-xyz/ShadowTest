@@ -1,7 +1,7 @@
 package ssproxy
 
 import (
-	"ShadowTest/offline_cache"
+	"ShadowTest/offlinecache"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,7 +66,7 @@ func TestIsWTFIsMyIpOffline_Online(t *testing.T) {
 	}))
 	defer server.Close()
 
-	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offlineCache := offlinecache.SafeIsOfflineCache{}
 	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
 	assert.False(t, offline)
 }
@@ -77,19 +77,19 @@ func TestIsWTFIsMyIpOffline_Offline(t *testing.T) {
 	}))
 	defer server.Close()
 
-	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offlineCache := offlinecache.SafeIsOfflineCache{}
 	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
 	assert.True(t, offline)
 }
 
 func TestIsWTFIsMyIpOffline_ConnectionError(t *testing.T) {
-	offlineCache := offline_cache.SafeIsOfflineCache{}
+	offlineCache := offlinecache.SafeIsOfflineCache{}
 	offline := IsWTFIsMyIpOffline(&offlineCache, "http://127.0.0.1:0")
 	assert.True(t, offline)
 }
 
 func TestIsWTFIsMyIpOffline_UsesCache(t *testing.T) {
-	offlineCache := &offline_cache.SafeIsOfflineCache{}
+	offlineCache := &offlinecache.SafeIsOfflineCache{}
 	offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
 
 	result := IsWTFIsMyIpOffline(offlineCache, "http://127.0.0.1:0")

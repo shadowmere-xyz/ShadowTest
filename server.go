@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ShadowTest/offline_cache"
+	"ShadowTest/offlinecache"
 	"ShadowTest/ssproxy"
 	"embed"
 	"encoding/json"
@@ -17,11 +17,16 @@ import (
 	"strconv"
 )
 
+// ContentType HTTP header for content type
 const ContentType = "Content-Type"
+
+// ContentTypeJson is the value for ContentType header when the content is JSON
 const ContentTypeJson = "application/json"
+
+// WTFIsMyIPTestURL is the URL used to check if https://wtfismyip.com is online
 const WTFIsMyIPTestURL = "https://wtfismyip.com/test"
 
-var offlineCache offline_cache.SafeIsOfflineCache
+var offlineCache offlinecache.SafeIsOfflineCache
 
 type proxyJson struct {
 	Address string `json:"address"`

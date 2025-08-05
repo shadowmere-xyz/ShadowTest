@@ -1,7 +1,8 @@
 package ssproxy
 
 import (
-	"ShadowTest/offline_cache"
+	"ShadowTest/offlinecache"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -30,8 +31,8 @@ type WTFIsMyIPData struct {
 	YourFuckingCountry     string `json:"YourFuckingCountry"`
 }
 
-func IsWTFIsMyIpOffline(offlineCache *offline_cache.SafeIsOfflineCache, testURL string) bool {
-	if !(offlineCache.Expired() || offlineCache.IsZero()) {
+func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL string) bool {
+	if !offlineCache.Expired() && !offlineCache.IsZero() {
 		return offlineCache.GetIsOfflineFromCache()
 	}
 
@@ -59,8 +60,8 @@ func IsWTFIsMyIpOffline(offlineCache *offline_cache.SafeIsOfflineCache, testURL 
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
 func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
-	escapedAddress := strings.Replace(address, "\n", "", -1)
-	escapedAddress = strings.Replace(escapedAddress, "\r", "", -1)
+	escapedAddress := strings.ReplaceAll(address, "\n", "")
+	escapedAddress = strings.ReplaceAll(escapedAddress, "\r", "")
 
 	addr, cipher, password, err := parseURL(escapedAddress)
 	if err != nil {
@@ -88,7 +89,9 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	httpTransport := &http.Transport{}
 	timeoutDuration := time.Duration(timeout) * time.Second
 	httpClient := &http.Client{Transport: httpTransport, Timeout: timeoutDuration}
-	httpTransport.Dial = dialer.Dial
+	httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
+	}
 	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"
 	if ipv4Only {
