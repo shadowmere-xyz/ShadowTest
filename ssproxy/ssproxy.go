@@ -2,13 +2,13 @@ package ssproxy
 
 import (
 	"errors"
-	"github.com/shadowsocks/go-shadowsocks2/socks"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"os"
-	"sync"
 	"time"
+
+	"github.com/shadowsocks/go-shadowsocks2/socks"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -19,7 +19,12 @@ code is not importable and needed some modifications to accept only one connecti
 // ListenForOneConnection create a local socks5 proxy and listen for 1 connection
 func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn, ready chan bool, getAddr func(net.Conn) (socks.Addr, error)) {
 	l, err := net.Listen("tcp", addr)
-	defer l.Close()
+	defer func(l net.Listener) {
+		err := l.Close()
+		if err != nil {
+			log.Errorf("failed to close connection: %v", err)
+		}
+	}(l)
 	if err != nil {
 		log.Errorf("failed to listen on %s: %v", addr, err)
 		return
@@ -33,17 +38,23 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 	}
 
 	go func() {
-		defer c.Close()
+		defer func(c net.Conn) {
+			err := c.Close()
+			if err != nil {
+				log.Errorf("failed to close connection: %v", err)
+			}
+		}(c)
 		tgt, err := getAddr(c)
 		if err != nil {
-
 			// UDP: keep the connection until disconnect then free the UDP socket
-			if err == socks.InfoUDPAssociate {
+			if errors.Is(err, socks.InfoUDPAssociate) {
 				buf := make([]byte, 1)
 				// block here
 				for {
 					_, err := c.Read(buf)
-					if err, ok := err.(net.Error); ok && err.Timeout() {
+					var neterr net.Error
+					if errors.As(err, &neterr) && neterr.Timeout() {
+						log.Infof("connection timed out")
 						continue
 					}
 					log.Info("UDP Associate End.")
@@ -60,7 +71,12 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 			log.Warnf("failed to connect to server %v: %v", server, err)
 			return
 		}
-		defer rc.Close()
+		defer func(rc net.Conn) {
+			err := rc.Close()
+			if err != nil {
+				log.Errorf("failed to close connection to server %v: %v", server, err)
+			}
+		}(rc)
 		rc = shadow(rc)
 
 		if _, err = rc.Write(tgt); err != nil {
@@ -77,23 +93,31 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 
 // relay copies between left and right bidirectionally
 func relay(left, right net.Conn) error {
-	var err, err1 error
-	var wg sync.WaitGroup
-	var wait = 5 * time.Second
-	wg.Add(1)
+	errCopy := make(chan error, 2)
+	const wait = 5 * time.Second
 	go func() {
-		defer wg.Done()
-		_, err1 = io.Copy(right, left)
-		right.SetReadDeadline(time.Now().Add(wait)) // unblock read on right
+		_, copyerr := io.Copy(right, left)
+		err := right.SetReadDeadline(time.Now().Add(wait)) // unblock read on right
+		if err != nil {
+			log.Errorf("failed to set read deadline: %v", err)
+		}
+		errCopy <- copyerr
 	}()
-	_, err = io.Copy(left, right)
-	left.SetReadDeadline(time.Now().Add(wait)) // unblock read on left
-	wg.Wait()
-	if err1 != nil && !errors.Is(err1, os.ErrDeadlineExceeded) { // requires Go 1.15+
-		return err1
-	}
-	if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
-		return err
+
+	go func() {
+		_, copyerr := io.Copy(left, right)
+		err := left.SetReadDeadline(time.Now().Add(wait)) // unblock read on left
+		if err != nil {
+			log.Errorf("failed to set read deadline: %v", err)
+		}
+		errCopy <- copyerr
+	}()
+
+	for i := 0; i < 2; i++ {
+		err := <-errCopy
+		if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
+			return err
+		}
 	}
 	return nil
 }

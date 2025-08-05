@@ -6,17 +6,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/phayes/freeport"
-	"github.com/shadowsocks/go-shadowsocks2/core"
-	"github.com/shadowsocks/go-shadowsocks2/socks"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/proxy"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/phayes/freeport"
+	"github.com/shadowsocks/go-shadowsocks2/core"
+	"github.com/shadowsocks/go-shadowsocks2/socks"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 )
 
 // WTFIsMyIPData is a data representation with the same structure returned by https://wtfismyip.com/json
