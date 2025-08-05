@@ -1,6 +1,7 @@
 package ssproxy
 
 import (
+	"ShadowTest/offline_cache"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -29,35 +30,31 @@ type WTFIsMyIPData struct {
 	YourFuckingCountry     string `json:"YourFuckingCountry"`
 }
 
-var offlineCache safeIsOfflineCache
-
-func IsWTFIsMyIpOffline() bool {
-	if !(offlineCache.expired() || offlineCache.isZero()) {
-		return offlineCache.getIsOfflineFromCache()
+func IsWTFIsMyIpOffline(offlineCache *offline_cache.SafeIsOfflineCache, testURL string) bool {
+	if !(offlineCache.Expired() || offlineCache.IsZero()) {
+		return offlineCache.GetIsOfflineFromCache()
 	}
 
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 	}
 
-	resp, err := client.Get("https://wtfismyip.com/test")
+	resp, err := client.Get(testURL)
 
 	if err != nil || resp.StatusCode != http.StatusOK {
-		offlineCache.setIsOfflineToCache(true, 5*time.Minute)
+		offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
 	} else {
-		offlineCache.setIsOfflineToCache(false, 5*time.Minute)
+		offlineCache.SetIsOfflineToCache(false, 5*time.Minute)
 	}
 
 	if resp != nil && resp.Body != nil {
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				log.Errorf("impossible to close response body %v", err)
-			}
-		}(resp.Body)
+		err := resp.Body.Close()
+		if err != nil {
+			log.Errorf("impossible to close response body %v", err)
+		}
 	}
 
-	return offlineCache.getIsOfflineFromCache()
+	return offlineCache.GetIsOfflineFromCache()
 }
 
 // GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
