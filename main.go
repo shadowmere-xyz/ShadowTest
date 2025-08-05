@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/getsentry/sentry-go"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+
+	"github.com/getsentry/sentry-go"
+	log "github.com/sirupsen/logrus"
 
 	_ "embed"
 
@@ -53,7 +54,7 @@ func main() {
 	})
 	routerWithMetrics := std.Handler("", mdlw, router)
 
-	log.Infof("Starting server at port %s\n", port)
+	log.Infof("Starting server at port %s", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), routerWithMetrics); err != nil {
 		log.Fatal(err)
 	}
