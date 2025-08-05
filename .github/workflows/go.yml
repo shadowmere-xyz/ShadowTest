@@ -7,10 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-
   build:
-    permissions:
-      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,9 +27,3 @@ jobs:
 
       - name: Test
         run: make test
-
-      - name: GoGitOps
-        id: gogitops
-        uses: beaujr/gogitops-action@v0.2
-        with:
-          github-actions-token: ${{secrets.GITHUB_TOKEN}}
