@@ -60,6 +60,15 @@ func TestGetProxyDetailsWrongCredentials(t *testing.T) {
 	assert.Empty(t, details.YourFuckingLocation)
 }
 
+func TestGetProxyDetailsWrongPort(t *testing.T) {
+	address := "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@localhost:6278/?outline=1"
+	details, err := GetShadowsocksProxyDetails(address, true, 5)
+	assert.Error(t, err)
+
+	assert.Empty(t, details.YourFuckingIPAddress)
+	assert.Empty(t, details.YourFuckingLocation)
+}
+
 func TestIsWTFIsMyIpOffline_Online(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

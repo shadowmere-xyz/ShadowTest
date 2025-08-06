@@ -1,10 +1,12 @@
 package ssproxy
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
@@ -93,24 +95,42 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 
 // relay copies between left and right bidirectionally
 func relay(left, right net.Conn) error {
-	var errLeft, errRight error
-	ch := make(chan struct{})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	go func() {
-		_, errLeft = io.Copy(right, left)
-		right.SetReadDeadline(time.Now()) // Unblock read on right
-		close(ch)
-	}()
+	var wg sync.WaitGroup
+	errCh := make(chan error, 2)
 
-	_, errRight = io.Copy(left, right)
-	left.SetReadDeadline(time.Now()) // Unblock read on left
-	<-ch                             // Wait for other goroutine
+	copyConn := func(dst, src net.Conn, name string) {
+		defer wg.Done()
+		done := make(chan struct{})
+		go func() {
+			select {
+			case <-ctx.Done():
+				dst.SetReadDeadline(time.Now())
+				src.SetReadDeadline(time.Now())
+			case <-done:
+			}
+		}()
 
-	if errLeft != nil && !errors.Is(errLeft, os.ErrDeadlineExceeded) {
-		return errLeft
+		_, err := io.Copy(dst, src)
+		close(done)
+		cancel()
+
+		if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
+			errCh <- err
+		}
 	}
-	if errRight != nil && !errors.Is(errRight, os.ErrDeadlineExceeded) {
-		return errRight
+
+	wg.Add(2)
+	go copyConn(right, left, "left->right")
+	go copyConn(left, right, "right->left")
+
+	wg.Wait()
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
 	}
-	return nil
 }
