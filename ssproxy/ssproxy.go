@@ -93,31 +93,24 @@ func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn,
 
 // relay copies between left and right bidirectionally
 func relay(left, right net.Conn) error {
-	errCopy := make(chan error, 2)
-	const wait = 5 * time.Second
-	go func() {
-		_, copyerr := io.Copy(right, left)
-		err := right.SetReadDeadline(time.Now().Add(wait)) // unblock read on right
-		if err != nil {
-			log.Errorf("failed to set read deadline: %v", err)
-		}
-		errCopy <- copyerr
-	}()
+	var errLeft, errRight error
+	ch := make(chan struct{})
 
 	go func() {
-		_, copyerr := io.Copy(left, right)
-		err := left.SetReadDeadline(time.Now().Add(wait)) // unblock read on left
-		if err != nil {
-			log.Errorf("failed to set read deadline: %v", err)
-		}
-		errCopy <- copyerr
+		_, errLeft = io.Copy(right, left)
+		right.SetReadDeadline(time.Now()) // Unblock read on right
+		close(ch)
 	}()
 
-	for i := 0; i < 2; i++ {
-		err := <-errCopy
-		if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
-			return err
-		}
+	_, errRight = io.Copy(left, right)
+	left.SetReadDeadline(time.Now()) // Unblock read on left
+	<-ch                             // Wait for other goroutine
+
+	if errLeft != nil && !errors.Is(errLeft, os.ErrDeadlineExceeded) {
+		return errLeft
+	}
+	if errRight != nil && !errors.Is(errRight, os.ErrDeadlineExceeded) {
+		return errRight
 	}
 	return nil
 }
