@@ -100,6 +100,7 @@ func relay(left, right net.Conn) error {
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, 2)
+	doneCh := make(chan struct{})
 
 	copyConn := func(dst, src net.Conn, name string) {
 		defer wg.Done()
@@ -126,11 +127,20 @@ func relay(left, right net.Conn) error {
 	go copyConn(right, left, "left->right")
 	go copyConn(left, right, "right->left")
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(doneCh)
+	}()
+
 	select {
-	case err := <-errCh:
-		return err
-	default:
-		return nil
+	case <-doneCh:
+		select {
+		case err := <-errCh:
+			return err
+		default:
+			return nil
+		}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
