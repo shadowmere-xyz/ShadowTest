@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHealthcheck(t *testing.T) {
@@ -131,8 +132,14 @@ func TestTestMethodNotAllowed(t *testing.T) {
 }
 
 func TestTestDefaultTimeoutError(t *testing.T) {
-	os.Setenv("TIMEOUT", "invalid")
-	defer os.Unsetenv("TIMEOUT")
+	err := os.Setenv("TIMEOUT", "invalid")
+	assert.NoError(t, err)
+	defer func() {
+		err := os.Unsetenv("TIMEOUT")
+		if err != nil {
+			fmt.Printf("failed to unset TIMEOUT env var: %v", err)
+		}
+	}()
 
 	router, err := getRouter(true)
 	assert.NoError(t, err)
