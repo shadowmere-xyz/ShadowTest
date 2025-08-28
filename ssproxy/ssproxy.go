@@ -108,8 +108,14 @@ func relay(left, right net.Conn) error {
 		go func() {
 			select {
 			case <-ctx.Done():
-				dst.SetReadDeadline(time.Now())
-				src.SetReadDeadline(time.Now())
+				errDst := dst.SetReadDeadline(time.Now())
+				if errDst != nil {
+					log.Errorf("failed to set read deadline: %v", errDst)
+				}
+				errSrc := src.SetReadDeadline(time.Now())
+				if errSrc != nil {
+					log.Errorf("failed to set read deadline: %v", errSrc)
+				}
 			case <-done:
 			}
 		}()
