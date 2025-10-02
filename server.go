@@ -7,14 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/html"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
 )
 
 // ContentType HTTP header for content type
@@ -62,7 +63,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		}
 
 		if ssproxy.IsWTFIsMyIpOffline(&offlineCache, WTFIsMyIPTestURL) {
-			log.Errorf("https://wtfismyip.com is having problems")
+			log.Error("We are facing issues reaching wtfismyip.com")
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
