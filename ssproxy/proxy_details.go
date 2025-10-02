@@ -45,6 +45,14 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 	resp, err := client.Get(testURL)
 
 	if err != nil || resp.StatusCode != http.StatusOK {
+		status := 0
+		if resp != nil {
+			status = resp.StatusCode
+		}
+		log.WithFields(map[string]interface{}{
+			"err":    err,
+			"status": status,
+		}).Error("Error checking wtfismyip.com status. Setting the cache to offline.")
 		offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
 	} else {
 		offlineCache.SetIsOfflineToCache(false, 5*time.Minute)
