@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  docker:
-    name: Build Docker image
+  docker-amd64:
+    name: Build Docker image (amd64)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -23,7 +23,31 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: false
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/shadowtest:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+
+  docker-arm64:
+    name: Build Docker image (arm64)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          platforms: linux/arm64
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/shadowtest:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
