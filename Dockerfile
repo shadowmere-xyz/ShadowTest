@@ -1,4 +1,4 @@
-FROM golang:1.25 AS build
+FROM golang:1.25-alpine AS build
 
 WORKDIR /app
 
@@ -11,16 +11,9 @@ ARG VERSION
 ARG COMMIT
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Version=$VERSION -X main.GitCommit=$COMMIT"
 
-FROM alpine:3.22
+FROM scratch
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /app/ShadowTest /usr/bin/
-
-ENV APP_USER=shadowtest
-ENV APP_GROUP=shadowtestgroup
-RUN addgroup -S "$APP_GROUP" && adduser -H -S "$APP_USER" -G "$APP_GROUP" -s /sbin/nologin \
-    && chown -R "$APP_USER":"$APP_GROUP" /usr/bin/ShadowTest
-USER $APP_USER
-
 EXPOSE 8080
-HEALTHCHECK --start-period=3s --interval=5s --timeout=1s --retries=3 CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
 
 ENTRYPOINT ["/usr/bin/ShadowTest"]
