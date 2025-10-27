@@ -13,3 +13,7 @@ test: start_test_server
 .PHONY:
 build_image:
 	docker build -t $(IMAGE_NAME) .
+
+.PHONY:
+start_server_rust:
+	shadowsocks-rust.ssserver -s 127.0.0.1:6276 -k password -m chacha20-ietf-poly1305

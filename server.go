@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/html"
 )
 
 // ContentType HTTP header for content type
@@ -91,6 +91,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(ContentType, "text/plain")
 		_, _ = w.Write([]byte("ok"))
 	})
 
@@ -121,6 +122,7 @@ func fillCheckError(w http.ResponseWriter, err error, address string) {
 	}
 
 	response := errorResponse{Error: message}
+	w.Header().Set(ContentType, ContentTypeJson)
 	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
