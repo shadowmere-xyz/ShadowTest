@@ -20,4 +20,5 @@ jobs:
         with:
           repo-checkout: false
           go-version-file: go.mod
+          go-version-input: ""
           go-package: ./...
