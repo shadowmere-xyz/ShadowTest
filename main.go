@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +39,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("sentry.Init: %s", err)
 		}
+		defer sentry.Flush(2 * time.Second)
 	} else {
 		log.Warn("SENTRY_DSN was not provided. Running without sentry.")
 	}
@@ -54,8 +61,37 @@ func main() {
 	})
 	routerWithMetrics := std.Handler("", mdlw, router)
 
-	log.Infof("Starting server at port %s", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), routerWithMetrics); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: routerWithMetrics,
 	}
+
+	go func() {
+		log.Infof("Starting server at port %s", port)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Info("Shutting down server...")
+
+	shutdownTimeout := 60 * time.Second
+	if envTimeout := os.Getenv("SHUTDOWN_TIMEOUT"); envTimeout != "" {
+		if t, err := strconv.Atoi(envTimeout); err == nil {
+			shutdownTimeout = time.Duration(t) * time.Second
+		} else {
+			log.Warnf("Invalid SHUTDOWN_TIMEOUT value '%s', using default 60s", envTimeout)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Info("Server exiting")
 }
