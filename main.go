@@ -35,11 +35,14 @@ func main() {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn:              sentryDsn,
 			TracesSampleRate: 0.1,
+			Release:          fmt.Sprintf("shadowtest@%s", Version),
+			Environment:      getEnvironment(),
 		})
 		if err != nil {
 			log.Fatalf("sentry.Init: %s", err)
 		}
 		defer sentry.Flush(2 * time.Second)
+		log.Info("Sentry initialized successfully")
 	} else {
 		log.Warn("SENTRY_DSN was not provided. Running without sentry.")
 	}
@@ -54,12 +57,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Wrap router with Sentry middleware
+	handlerWithSentry := sentryMiddleware(router)
+
 	mdlw := middleware.New(middleware.Config{
 		Recorder: metrics.NewRecorder(metrics.Config{
 			Prefix: "shadowtest",
 		}),
 	})
-	routerWithMetrics := std.Handler("", mdlw, router)
+	routerWithMetrics := std.Handler("", mdlw, handlerWithSentry)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
@@ -94,4 +100,32 @@ func main() {
 	}
 
 	log.Info("Server exiting")
+}
+
+func getEnvironment() string {
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		env = "production"
+	}
+	return env
+}
+
+func sentryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hub := sentry.CurrentHub().Clone()
+		hub.Scope().SetRequest(r)
+		hub.Scope().SetTag("path", r.URL.Path)
+		hub.Scope().SetTag("method", r.Method)
+		ctx := sentry.SetHubOnContext(r.Context(), hub)
+
+		defer func() {
+			if err := recover(); err != nil {
+				hub.RecoverWithContext(ctx, err)
+				log.Errorf("Panic recovered: %v", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+		}()
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

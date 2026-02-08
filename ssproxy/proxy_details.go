@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/phayes/freeport"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
@@ -53,6 +54,9 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 			"err":    err,
 			"status": status,
 		}).Error("Error checking wtfismyip.com status. Setting the cache to offline.")
+		if err != nil {
+			sentry.CaptureException(err)
+		}
 		offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
 	} else {
 		offlineCache.SetIsOfflineToCache(false, 5*time.Minute)
@@ -62,6 +66,7 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 		err := resp.Body.Close()
 		if err != nil {
 			log.Errorf("impossible to close response body %v", err)
+			sentry.CaptureException(err)
 		}
 	}
 
@@ -116,6 +121,15 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
+	defer func() {
+		if response.Body != nil {
+			closeErr := response.Body.Close()
+			if closeErr != nil {
+				log.Errorf("failed to close response body: %v", closeErr)
+				sentry.CaptureException(closeErr)
+			}
+		}
+	}()
 
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
