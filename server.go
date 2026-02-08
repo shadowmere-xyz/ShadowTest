@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -63,7 +64,9 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		}
 
 		if ssproxy.IsWTFIsMyIpOffline(&offlineCache, WTFIsMyIPTestURL) {
+			err := errors.New("unable to reach wtfismyip.com")
 			log.Error("We are facing issues reaching wtfismyip.com")
+			sentry.CaptureException(err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -87,6 +90,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 
 		if err != nil {
 			log.Errorf("error occurred when sending the data back to the client %v", err)
+			sentry.CaptureException(err)
 		}
 	})
 
@@ -127,6 +131,7 @@ func fillCheckError(w http.ResponseWriter, err error, address string) {
 
 	if err != nil {
 		log.Errorf("error occurred when sending the data back to the client %v", err)
+		sentry.CaptureException(err)
 	}
 }
 
@@ -136,6 +141,7 @@ func closeBody(r *http.Request) {
 			err := Body.Close()
 			if err != nil {
 				log.Errorf("impossible to close request body %v", err)
+				sentry.CaptureException(err)
 			}
 		}
 	}(r.Body)
@@ -163,6 +169,7 @@ func getAddressAndTimeout(r *http.Request) (string, int, error) {
 		timeout, err = getDefaultTimeout()
 		if err != nil {
 			log.Errorf("unable to get default timeout: %v", err)
+			sentry.CaptureException(err)
 			return "", 0, fmt.Errorf("unable to get default timeout: %v", err)
 		}
 	}
