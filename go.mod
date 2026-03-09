@@ -1,6 +1,6 @@
 module ShadowTest
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/getsentry/sentry-go v0.43.0
