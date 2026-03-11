@@ -19,23 +19,12 @@ code is not importable and needed some modifications to accept only one connecti
 */
 
 // ListenForOneConnection create a local socks5 proxy and listen for 1 connection
-func ListenForOneConnection(addr, server string, shadow func(net.Conn) net.Conn, ready chan bool, getAddr func(net.Conn) (socks.Addr, error)) {
-	l, err := net.Listen("tcp", addr)
-	defer func(l net.Listener) {
-		err := l.Close()
-		if err != nil {
-			log.Errorf("failed to close connection: %v", err)
-		}
-	}(l)
-	if err != nil {
-		log.Errorf("failed to listen on %s: %v", addr, err)
-		return
-	}
-	ready <- true
-
+func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
 	c, err := l.Accept()
 	if err != nil {
-		log.Errorf("failed to accept: %s", err)
+		if !errors.Is(err, net.ErrClosed) {
+			log.Errorf("failed to accept: %s", err)
+		}
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/phayes/freeport"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	log "github.com/sirupsen/logrus"
@@ -87,27 +87,34 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
-	port, err := freeport.GetFreePort()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
-	proxyAddr := fmt.Sprintf("127.0.0.1:%d", port)
+	defer func(l net.Listener) {
+		err := l.Close()
+		if err != nil && !errors.Is(err, net.ErrClosed) {
+			log.Errorf("failed to close listener: %v", err)
+		}
+	}(l)
+	proxyAddr := l.Addr().String()
 
-	ready := make(chan bool, 1)
-
-	go ListenForOneConnection(proxyAddr, addr, ciph.StreamConn, ready, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
+	go ListenForOneConnection(l, addr, ciph.StreamConn, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
 
-	httpTransport := &http.Transport{}
+	httpTransport := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	defer httpTransport.CloseIdleConnections()
+
 	timeoutDuration := time.Duration(timeout) * time.Second
 	httpClient := &http.Client{Transport: httpTransport, Timeout: timeoutDuration}
 	httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
 	}
-	<-ready
 	wtfismyipURL := "https://wtfismyip.com/json"
 	if ipv4Only {
 		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
