@@ -91,7 +91,7 @@ func relay(left, right net.Conn) error {
 	errCh := make(chan error, 2)
 	doneCh := make(chan struct{})
 
-	copyConn := func(dst, src net.Conn, name string) {
+	copyConn := func(dst, src net.Conn) {
 		defer wg.Done()
 		done := make(chan struct{})
 		go func() {
@@ -119,8 +119,8 @@ func relay(left, right net.Conn) error {
 	}
 
 	wg.Add(2)
-	go copyConn(right, left, "left->right")
-	go copyConn(left, right, "right->left")
+	go copyConn(right, left)
+	go copyConn(left, right)
 
 	go func() {
 		wg.Wait()

@@ -3,19 +3,14 @@ package ssproxy
 import (
 	"ShadowTest/offlinecache"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/shadowsocks/go-shadowsocks2/core"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
@@ -73,20 +68,24 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 	return offlineCache.GetIsOfflineFromCache()
 }
 
-// GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
-func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
-	escapedAddress := strings.ReplaceAll(address, "\n", "")
-	escapedAddress = strings.ReplaceAll(escapedAddress, "\r", "")
-
-	addr, cipher, password, err := parseURL(escapedAddress)
-	if err != nil {
-		return WTFIsMyIPData{}, err
+// TestProxy tests a proxy by dispatching to the appropriate handler based on URL scheme.
+func TestProxy(address string, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
+	if strings.HasPrefix(address, "ssr://") {
+		return GetSSRProxyDetails(address, ipv4Only, timeout)
 	}
+	return GetShadowsocksProxyDetails(address, ipv4Only, timeout)
+}
 
-	ciph, err := core.PickCipher(cipher, []byte{}, password)
-	if err != nil {
-		return WTFIsMyIPData{}, err
-	}
+func sanitizeAddress(address string) string {
+	s := strings.ReplaceAll(address, "\n", "")
+	return strings.ReplaceAll(s, "\r", "")
+}
+
+// fetchProxyDetails spins up a local SOCKS5 relay to the given server through
+// the provided shadow function, then queries wtfismyip.com to retrieve the
+// exit-node details. Both SS and SSR proxy testers delegate to this after
+// setting up their protocol-specific cipher/obfs/protocol layers.
+func fetchProxyDetails(serverAddr string, shadow func(net.Conn) net.Conn, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return WTFIsMyIPData{}, err
@@ -99,7 +98,7 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	}(l)
 	proxyAddr := l.Addr().String()
 
-	go ListenForOneConnection(l, addr, ciph.StreamConn, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
+	go ListenForOneConnection(l, serverAddr, shadow, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
 		return WTFIsMyIPData{}, err
@@ -111,6 +110,9 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	defer httpTransport.CloseIdleConnections()
 
 	timeoutDuration := time.Duration(timeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+	defer cancel()
+
 	httpClient := &http.Client{Transport: httpTransport, Timeout: timeoutDuration}
 	httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
@@ -119,7 +121,7 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	if ipv4Only {
 		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
 	}
-	request, err := http.NewRequest("GET", wtfismyipURL, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, wtfismyipURL, nil)
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
@@ -128,68 +130,11 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
-	defer func() {
-		if response.Body != nil {
-			closeErr := response.Body.Close()
-			if closeErr != nil {
-				log.Errorf("failed to close response body: %v", closeErr)
-				sentry.CaptureException(closeErr)
-			}
-		}
-	}()
+	defer response.Body.Close()
 
-	b, err := io.ReadAll(response.Body)
-	if err != nil {
-		return WTFIsMyIPData{}, err
-	}
-
-	data := WTFIsMyIPData{}
-	err = json.Unmarshal(b, &data)
-	if err != nil {
+	var data WTFIsMyIPData
+	if err := json.NewDecoder(response.Body).Decode(&data); err != nil {
 		return WTFIsMyIPData{}, err
 	}
 	return data, nil
-}
-
-func extractCredentialsFromBase64(address string) (string, error) {
-	key := address[5:strings.Index(address, "@")]
-
-	creds, err := base64DecodeStripped(key)
-	if err != nil {
-		return "", err
-	}
-
-	creds = strings.ReplaceAll(creds, "/", "%2F")
-
-	return strings.ReplaceAll(address, key, creds), nil
-}
-
-func base64DecodeStripped(s string) (string, error) {
-	if i := len(s) % 4; i != 0 {
-		s += strings.Repeat("=", 4-i)
-	}
-	decoded, err := base64.StdEncoding.DecodeString(s)
-	return string(decoded), err
-}
-
-func parseURL(s string) (addr, cipher, password string, err error) {
-	if !strings.HasPrefix(s, "ss://") || !strings.Contains(s, "@") {
-		return "", "", "", fmt.Errorf("address %s does not seem to be a shadowsocks SIP002 address", s)
-	}
-	s, err = extractCredentialsFromBase64(s)
-	if err != nil {
-		return
-	}
-
-	u, err := url.Parse(s)
-	if err != nil {
-		return
-	}
-
-	addr = u.Host
-	if u.User != nil {
-		cipher = u.User.Username()
-		password, _ = u.User.Password()
-	}
-	return
 }
