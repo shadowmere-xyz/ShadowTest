@@ -38,10 +38,9 @@ func parseSSRURL(s string) (SSRConfig, error) {
 	if idx := strings.Index(decoded, "/?"); idx != -1 {
 		mainPart = decoded[:idx]
 		paramsPart = decoded[idx+2:]
-	} else if idx := strings.LastIndex(decoded, "/"); idx != -1 {
-		// Some SSR URLs use just "/" as separator
-		mainPart = decoded[:idx]
-		paramsPart = decoded[idx+1:]
+	} else {
+		// Trim a bare trailing "/" if present (some SSR URLs end with one)
+		mainPart = strings.TrimRight(decoded, "/")
 	}
 
 	// Split main part on ":"
@@ -78,20 +77,23 @@ func parseSSRURL(s string) (SSRConfig, error) {
 
 	// Parse optional query parameters
 	if paramsPart != "" {
-		params, err := url.ParseQuery(paramsPart)
-		if err == nil {
-			if v := params.Get("obfsparam"); v != "" {
-				decoded, err := base64DecodeSSR(v)
-				if err == nil {
-					config.ObfsParam = decoded
-				}
+		params, parseErr := url.ParseQuery(paramsPart)
+		if parseErr != nil {
+			return SSRConfig{}, fmt.Errorf("failed to parse SSR query parameters: %w", parseErr)
+		}
+		if v := params.Get("obfsparam"); v != "" {
+			decoded, decErr := base64DecodeSSR(v)
+			if decErr != nil {
+				return SSRConfig{}, fmt.Errorf("failed to decode obfsparam: %w", decErr)
 			}
-			if v := params.Get("protoparam"); v != "" {
-				decoded, err := base64DecodeSSR(v)
-				if err == nil {
-					config.ProtoParam = decoded
-				}
+			config.ObfsParam = decoded
+		}
+		if v := params.Get("protoparam"); v != "" {
+			decoded, decErr := base64DecodeSSR(v)
+			if decErr != nil {
+				return SSRConfig{}, fmt.Errorf("failed to decode protoparam: %w", decErr)
 			}
+			config.ProtoParam = decoded
 		}
 	}
 

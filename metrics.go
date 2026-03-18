@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -18,7 +20,7 @@ var (
 )
 
 func proxyTypeFromAddress(address string) string {
-	if len(address) >= 6 && address[:6] == "ssr://" {
+	if strings.HasPrefix(address, "ssr://") {
 		return "ssr"
 	}
 	return "ss"
