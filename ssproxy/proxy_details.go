@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -130,7 +131,13 @@ func fetchProxyDetails(serverAddr string, shadow func(net.Conn) net.Conn, ipv4On
 	if err != nil {
 		return WTFIsMyIPData{}, err
 	}
-	defer response.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Errorf("impossible to close response body %v", err)
+			sentry.CaptureException(err)
+		}
+	}(response.Body)
 
 	var data WTFIsMyIPData
 	if err := json.NewDecoder(response.Body).Decode(&data); err != nil {
