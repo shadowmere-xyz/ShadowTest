@@ -33,8 +33,7 @@ func parseSSRURL(s string) (SSRConfig, error) {
 	}
 
 	// Split params from the main part: host:port:protocol:method:obfs:base64pass/?params
-	mainPart := decoded
-	paramsPart := ""
+	var mainPart, paramsPart string
 	if idx := strings.Index(decoded, "/?"); idx != -1 {
 		mainPart = decoded[:idx]
 		paramsPart = decoded[idx+2:]
