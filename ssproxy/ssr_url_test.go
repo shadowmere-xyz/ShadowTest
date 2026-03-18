@@ -9,8 +9,7 @@ import (
 )
 
 func ssrEncode(s string) string {
-	encoded := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(s))
-	return encoded
+	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(s))
 }
 
 func TestParseSSRURL(t *testing.T) {
@@ -102,14 +101,13 @@ func TestBase64DecodeSSRURLSafe(t *testing.T) {
 }
 
 func TestBase64DecodeSSRPaddingNormalization(t *testing.T) {
-	// Test various padding scenarios
+	// Test that base64DecodeSSR handles strings with stripped padding
 	tests := []string{"a", "ab", "abc", "abcd", "abcde"}
 	for _, orig := range tests {
-		encoded := base64.StdEncoding.EncodeToString([]byte(orig))
-		// Strip padding
-		encoded = encoded[:len(encoded)-((4-len(orig)%4)%4)]
-		// Should still decode with padding normalization (when it's valid stripped)
-		decoded, err := base64DecodeSSR(base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(orig)))
+		// Encode without padding (as SSR URLs do in practice)
+		stripped := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(orig))
+
+		decoded, err := base64DecodeSSR(stripped)
 		require.NoError(t, err)
 		assert.Equal(t, orig, decoded)
 	}
