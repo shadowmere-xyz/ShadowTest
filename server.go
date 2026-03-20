@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -77,10 +76,11 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 			return
 		}
 
-		details, err := ssproxy.GetShadowsocksProxyDetails(address, ipv4Only, timeout)
-		testsTotal.Inc()
+		proxyType := proxyTypeFromAddress(address)
+		details, err := ssproxy.TestProxy(address, ipv4Only, timeout)
+		testsTotal.WithLabelValues(proxyType).Inc()
 		if err != nil {
-			failuresTotal.Inc()
+			failuresTotal.WithLabelValues(proxyType).Inc()
 			fillCheckError(w, err, address)
 			return
 		}
@@ -119,6 +119,11 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 }
 
 func fillCheckError(w http.ResponseWriter, err error, address string) {
+	log.WithFields(log.Fields{
+		"address": address,
+		"error":   err,
+	}).Warn("Proxy test failed")
+
 	message := fmt.Sprintf("Unable to get information for address %s", address)
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
@@ -136,15 +141,12 @@ func fillCheckError(w http.ResponseWriter, err error, address string) {
 }
 
 func closeBody(r *http.Request) {
-	func(Body io.ReadCloser) {
-		if Body != nil {
-			err := Body.Close()
-			if err != nil {
-				log.Errorf("impossible to close request body %v", err)
-				sentry.CaptureException(err)
-			}
+	if r.Body != nil {
+		if err := r.Body.Close(); err != nil {
+			log.Errorf("impossible to close request body %v", err)
+			sentry.CaptureException(err)
 		}
-	}(r.Body)
+	}
 }
 
 func getAddressAndTimeout(r *http.Request) (string, int, error) {

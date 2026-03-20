@@ -1,13 +1,16 @@
 # ShadowTest
 
-A service to test shadowsocks keys.
+A service to test Shadowsocks (SS) and ShadowsocksR (SSR) keys.
 
 [![Go](https://github.com/jadolg/ShadowTest/actions/workflows/go.yml/badge.svg)](https://github.com/jadolg/ShadowTest/actions/workflows/go.yml)
 
 ## How to use
 
-Using curl, call te test endpoint with a SIP002 compatible address:
+Using curl, call the test endpoint with a Shadowsocks SIP002 address:
 `curl -i localhost:8080/v2/test -d "address=ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpiYWRwYXNzd29yZA@localhost:6276/?outline=1"`
+
+Or with a ShadowsocksR address:
+`curl -i localhost:8080/v2/test -d "address=ssr://MTAuMC4wLjE6NDQzOm9yaWdpbjphZXMtMTI4LWNmYjpwbGFpbjpjR0Z6Y3pFeU13"`
 
 #### Results
 
