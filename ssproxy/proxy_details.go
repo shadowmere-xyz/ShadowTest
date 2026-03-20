@@ -98,8 +98,9 @@ func fetchProxyDetails(serverAddr string, shadow func(net.Conn) net.Conn, ipv4On
 		}
 	}(l)
 	proxyAddr := l.Addr().String()
+	timeoutDuration := time.Duration(timeout) * time.Second
 
-	go ListenForOneConnection(l, serverAddr, shadow, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
+	go ListenForOneConnection(l, serverAddr, shadow, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) }, timeoutDuration)
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
 		return WTFIsMyIPData{}, err
@@ -109,8 +110,6 @@ func fetchProxyDetails(serverAddr string, shadow func(net.Conn) net.Conn, ipv4On
 		DisableKeepAlives: true,
 	}
 	defer httpTransport.CloseIdleConnections()
-
-	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 

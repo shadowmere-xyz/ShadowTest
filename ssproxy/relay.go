@@ -19,7 +19,7 @@ code is not importable and needed some modifications to accept only one connecti
 */
 
 // ListenForOneConnection create a local socks5 proxy and listen for 1 connection
-func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
+func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error), relayTimeout time.Duration) {
 	c, err := l.Accept()
 	if err != nil {
 		if !errors.Is(err, net.ErrClosed) {
@@ -76,15 +76,15 @@ func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn)
 		}
 
 		log.Infof("proxy %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
-		if err = relay(rc, c); err != nil {
+		if err = relay(rc, c, relayTimeout); err != nil {
 			log.Warnf("relay error: %v", err)
 		}
 	}()
 }
 
 // relay copies between left and right bidirectionally
-func relay(left, right net.Conn) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func relay(left, right net.Conn, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	var wg sync.WaitGroup
