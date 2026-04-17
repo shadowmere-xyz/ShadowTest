@@ -73,7 +73,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                 this.proxyAddress = '';
                 this.proxyLocation = '';
                 this.proxyISP = '';
-                axios.post('/v2/test',
+                axios.post('/v3/test',
                     {
                         'address': this.proxy
                     }
@@ -82,9 +82,9 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
                         this.proxyStatus = 'Offline';
                     } else {
                         this.proxyStatus = 'Online';
-                        this.proxyAddress = response.data.YourFuckingIPAddress;
-                        this.proxyLocation = response.data.YourFuckingLocation;
-                        this.proxyISP = response.data.YourFuckingISP;
+                        this.proxyAddress = response.data.IPAddress;
+                        this.proxyLocation = response.data.Location;
+                        this.proxyISP = response.data.ISP;
                     }
                 }).catch(error => {
                     this.proxyStatus = 'Error '+error.response.data;

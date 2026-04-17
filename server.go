@@ -25,8 +25,7 @@ const ContentType = "Content-Type"
 // ContentTypeJson is the value for ContentType header when the content is JSON
 const ContentTypeJson = "application/json"
 
-// WTFIsMyIPTestURL is the URL used to check if https://wtfismyip.com is online
-const WTFIsMyIPTestURL = "https://wtfismyip.com/test"
+const IPInfoTestURL = "https://ip.r4bbit.net/health"
 
 var offlineCache offlinecache.SafeIsOfflineCache
 
@@ -53,19 +52,23 @@ var faviconFile embed.FS
 func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Deprecated endpoint. Use v2 instead.", http.StatusNotFound)
+		http.Error(w, "Deprecated endpoint. Use v3 instead.", http.StatusNotFound)
 	})
 
 	mux.HandleFunc("/v2/test", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Deprecated endpoint. Use v3 instead.", http.StatusNotFound)
+	})
+
+	mux.HandleFunc("/v3/test", func(w http.ResponseWriter, r *http.Request) {
 		defer closeBody(r)
 		if r.Method != "POST" {
 			http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 			return
 		}
 
-		if ssproxy.IsWTFIsMyIpOffline(&offlineCache, WTFIsMyIPTestURL) {
-			err := errors.New("unable to reach wtfismyip.com")
-			log.Error("We are facing issues reaching wtfismyip.com")
+		if ssproxy.IsIPInfoOffline(&offlineCache, IPInfoTestURL) {
+			err := errors.New("unable to reach ip.r4bbit.net")
+			log.Error("We are facing issues reaching ip.r4bbit.net")
 			sentry.CaptureException(err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return

@@ -32,7 +32,7 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", address)))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -40,12 +40,12 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	details := ssproxy.WTFIsMyIPData{}
+	details := ssproxy.IPInfo{}
 	err = json.NewDecoder(rr.Body).Decode(&details)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, details.YourFuckingIPAddress)
-	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.IPAddress)
+	assert.NotEmpty(t, details.Location)
 }
 
 func TestGetProxyDetailsFromServerForm(t *testing.T) {
@@ -55,7 +55,7 @@ func TestGetProxyDetailsFromServerForm(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("address=%s", address)))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	rr := httptest.NewRecorder()
@@ -63,12 +63,12 @@ func TestGetProxyDetailsFromServerForm(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	details := ssproxy.WTFIsMyIPData{}
+	details := ssproxy.IPInfo{}
 	err = json.NewDecoder(rr.Body).Decode(&details)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, details.YourFuckingIPAddress)
-	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.IPAddress)
+	assert.NotEmpty(t, details.Location)
 }
 
 func TestGetProxyDetailsFromServerJSONTimeout(t *testing.T) {
@@ -78,7 +78,7 @@ func TestGetProxyDetailsFromServerJSONTimeout(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\", \"timeout\": 1 }", address)))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -94,7 +94,7 @@ func TestGetProxyDetailsFromServerJSONWithoutTimeout(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", address)))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -116,14 +116,30 @@ func TestDeprecatedV1(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 	content, err := io.ReadAll(rr.Body)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("Deprecated endpoint. Use v2 instead.\n"), content)
+	assert.Equal(t, []byte("Deprecated endpoint. Use v3 instead.\n"), content)
+}
+
+func TestDeprecatedV2(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", "")))
+	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+	content, err := io.ReadAll(rr.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Deprecated endpoint. Use v3 instead.\n"), content)
 }
 
 func TestTestMethodNotAllowed(t *testing.T) {
 	router, err := getRouter(true)
 	assert.NoError(t, err)
 
-	req, _ := http.NewRequest("GET", "/v2/test", nil)
+	req, _ := http.NewRequest("GET", "/v3/test", nil)
 	rr := httptest.NewRecorder()
 
 	router.ServeHTTP(rr, req)
@@ -145,7 +161,7 @@ func TestTestDefaultTimeoutError(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(`{ "address": "test" }`))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
@@ -159,7 +175,7 @@ func TestTestFormData(t *testing.T) {
 	assert.NoError(t, err)
 
 	form := "address=test_address&timeout=15"
-	req, _ := http.NewRequest("POST", "/v2/test", bytes.NewBufferString(form))
+	req, _ := http.NewRequest("POST", "/v3/test", bytes.NewBufferString(form))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
 
@@ -172,7 +188,7 @@ func TestTestMissingAddress(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(`{}`))
-	req, _ := http.NewRequest("POST", "/v2/test", body)
+	req, _ := http.NewRequest("POST", "/v3/test", body)
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
@@ -186,7 +202,7 @@ func TestTestInvalidTimeoutForm(t *testing.T) {
 	assert.NoError(t, err)
 
 	form := "address=test_address&timeout=notanumber"
-	req, _ := http.NewRequest("POST", "/v2/test", bytes.NewBufferString(form))
+	req, _ := http.NewRequest("POST", "/v3/test", bytes.NewBufferString(form))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
 

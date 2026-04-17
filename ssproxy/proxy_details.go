@@ -21,20 +21,17 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// WTFIsMyIPData is a data representation with the same structure returned by https://wtfismyip.com/json
-type WTFIsMyIPData struct {
-	YourFuckingIPAddress   string `json:"YourFuckingIPAddress"`
-	YourFuckingLocation    string `json:"YourFuckingLocation"`
-	YourFuckingHostname    string `json:"YourFuckingHostname"`
-	YourFuckingISP         string `json:"YourFuckingISP"`
-	YourFuckingTorExit     bool   `json:"YourFuckingTorExit"`
-	YourFuckingCountryCode string `json:"YourFuckingCountryCode"`
-	YourFuckingCity        string `json:"YourFuckingCity"`
-	YourFuckingCountry     string `json:"YourFuckingCountry"`
+type IPInfo struct {
+	IPAddress   string `json:"IPAddress"`
+	Location    string `json:"Location"`
+	ISP         string `json:"ISP"`
+	TorExit     bool   `json:"TorExit"`
+	CountryCode string `json:"CountryCode"`
+	City        string `json:"City"`
+	Country     string `json:"Country"`
 }
 
-// IsWTFIsMyIpOffline checks if wtfismyip.com is offline by making a request to a test URL
-func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL string) bool {
+func IsIPInfoOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL string) bool {
 	if !offlineCache.Expired() && !offlineCache.IsZero() {
 		return offlineCache.GetIsOfflineFromCache()
 	}
@@ -53,7 +50,7 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 		log.WithFields(map[string]interface{}{
 			"err":    err,
 			"status": status,
-		}).Error("Error checking wtfismyip.com status. Setting the cache to offline.")
+		}).Error("Error checking ip.r4bbit.net status. Setting the cache to offline.")
 		if err != nil {
 			sentry.CaptureException(err)
 		}
@@ -73,23 +70,22 @@ func IsWTFIsMyIpOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL s
 	return offlineCache.GetIsOfflineFromCache()
 }
 
-// GetShadowsocksProxyDetails tests a shadowsocks proxy by using it on a call to wtfismyip.com
-func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTFIsMyIPData, error) {
+func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (IPInfo, error) {
 	escapedAddress := strings.ReplaceAll(address, "\n", "")
 	escapedAddress = strings.ReplaceAll(escapedAddress, "\r", "")
 
 	addr, cipher, password, err := parseURL(escapedAddress)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 
 	ciph, err := core.PickCipher(cipher, []byte{}, password)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 	defer func(l net.Listener) {
 		err := l.Close()
@@ -102,7 +98,7 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	go ListenForOneConnection(l, addr, ciph.StreamConn, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 
 	httpTransport := &http.Transport{
@@ -115,18 +111,18 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 	httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
 	}
-	wtfismyipURL := "https://wtfismyip.com/json"
+	ipinfoURL := "https://ip.r4bbit.net/json"
 	if ipv4Only {
-		wtfismyipURL = "https://ipv4.wtfismyip.com/json"
+		ipinfoURL = "https://ipv4.r4bbit.net/json"
 	}
-	request, err := http.NewRequest("GET", wtfismyipURL, nil)
+	request, err := http.NewRequest("GET", ipinfoURL, nil)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 	request.Header.Set("User-Agent", "ShadowTest")
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 	defer func() {
 		if response.Body != nil {
@@ -140,13 +136,13 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (WTF
 
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 
-	data := WTFIsMyIPData{}
+	data := IPInfo{}
 	err = json.Unmarshal(b, &data)
 	if err != nil {
-		return WTFIsMyIPData{}, err
+		return IPInfo{}, err
 	}
 	return data, nil
 }
