@@ -47,8 +47,8 @@ func TestGetProxyDetails(t *testing.T) {
 	details, err := GetShadowsocksProxyDetails(address, true, 30)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, details.YourFuckingIPAddress)
-	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.IPAddress)
+	assert.NotEmpty(t, details.Location)
 }
 
 func TestGetProxyDetailsWrongCredentials(t *testing.T) {
@@ -56,8 +56,8 @@ func TestGetProxyDetailsWrongCredentials(t *testing.T) {
 	details, err := GetShadowsocksProxyDetails(address, true, 30)
 	assert.Error(t, err)
 
-	assert.Empty(t, details.YourFuckingIPAddress)
-	assert.Empty(t, details.YourFuckingLocation)
+	assert.Empty(t, details.IPAddress)
+	assert.Empty(t, details.Location)
 }
 
 func TestGetProxyDetailsWrongPort(t *testing.T) {
@@ -65,42 +65,42 @@ func TestGetProxyDetailsWrongPort(t *testing.T) {
 	details, err := GetShadowsocksProxyDetails(address, true, 5)
 	assert.Error(t, err)
 
-	assert.Empty(t, details.YourFuckingIPAddress)
-	assert.Empty(t, details.YourFuckingLocation)
+	assert.Empty(t, details.IPAddress)
+	assert.Empty(t, details.Location)
 }
 
-func TestIsWTFIsMyIpOffline_Online(t *testing.T) {
+func TestIsIPInfoOffline_Online(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	offlineCache := offlinecache.SafeIsOfflineCache{}
-	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
+	offline := IsIPInfoOffline(&offlineCache, server.URL)
 	assert.False(t, offline)
 }
 
-func TestIsWTFIsMyIpOffline_Offline(t *testing.T) {
+func TestIsIPInfoOffline_Offline(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
 	offlineCache := offlinecache.SafeIsOfflineCache{}
-	offline := IsWTFIsMyIpOffline(&offlineCache, server.URL)
+	offline := IsIPInfoOffline(&offlineCache, server.URL)
 	assert.True(t, offline)
 }
 
-func TestIsWTFIsMyIpOffline_ConnectionError(t *testing.T) {
+func TestIsIPInfoOffline_ConnectionError(t *testing.T) {
 	offlineCache := offlinecache.SafeIsOfflineCache{}
-	offline := IsWTFIsMyIpOffline(&offlineCache, "http://127.0.0.1:0")
+	offline := IsIPInfoOffline(&offlineCache, "http://127.0.0.1:0")
 	assert.True(t, offline)
 }
 
-func TestIsWTFIsMyIpOffline_UsesCache(t *testing.T) {
+func TestIsIPInfoOffline_UsesCache(t *testing.T) {
 	offlineCache := &offlinecache.SafeIsOfflineCache{}
 	offlineCache.SetIsOfflineToCache(true, 5*time.Minute)
 
-	result := IsWTFIsMyIpOffline(offlineCache, "http://127.0.0.1:0")
+	result := IsIPInfoOffline(offlineCache, "http://127.0.0.1:0")
 	assert.True(t, result)
 }

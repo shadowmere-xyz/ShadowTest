@@ -40,12 +40,12 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	details := ssproxy.WTFIsMyIPData{}
+	details := ssproxy.IPInfo{}
 	err = json.NewDecoder(rr.Body).Decode(&details)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, details.YourFuckingIPAddress)
-	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.IPAddress)
+	assert.NotEmpty(t, details.Location)
 }
 
 func TestGetProxyDetailsFromServerForm(t *testing.T) {
@@ -63,12 +63,12 @@ func TestGetProxyDetailsFromServerForm(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	details := ssproxy.WTFIsMyIPData{}
+	details := ssproxy.IPInfo{}
 	err = json.NewDecoder(rr.Body).Decode(&details)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, details.YourFuckingIPAddress)
-	assert.NotEmpty(t, details.YourFuckingLocation)
+	assert.NotEmpty(t, details.IPAddress)
+	assert.NotEmpty(t, details.Location)
 }
 
 func TestGetProxyDetailsFromServerJSONTimeout(t *testing.T) {
