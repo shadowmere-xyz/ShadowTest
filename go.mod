@@ -3,7 +3,7 @@ module ShadowTest
 go 1.26.2
 
 require (
-	github.com/getsentry/sentry-go v0.45.1
+	github.com/getsentry/sentry-go v0.46.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5
 	github.com/sirupsen/logrus v1.9.4
