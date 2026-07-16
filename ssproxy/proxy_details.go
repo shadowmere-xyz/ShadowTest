@@ -36,8 +36,13 @@ func IsIPInfoOffline(offlineCache *offlinecache.SafeIsOfflineCache, testURL stri
 		return offlineCache.GetIsOfflineFromCache()
 	}
 
+	transport := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	defer transport.CloseIdleConnections()
 	client := &http.Client{
-		Timeout: 3 * time.Second,
+		Timeout:   3 * time.Second,
+		Transport: transport,
 	}
 
 	resp, err := client.Get(testURL)
@@ -95,7 +100,10 @@ func GetShadowsocksProxyDetails(address string, ipv4Only bool, timeout int) (IPI
 	}(l)
 	proxyAddr := l.Addr().String()
 
-	go ListenForOneConnection(l, addr, ciph.StreamConn, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go ListenForOneConnection(ctx, l, addr, ciph.StreamConn, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
 		return IPInfo{}, err

@@ -18,8 +18,10 @@ Taken from https://github.com/shadowsocks/go-shadowsocks2/blob/master/tcp.go sin
 code is not importable and needed some modifications to accept only one connection.
 */
 
-// ListenForOneConnection create a local socks5 proxy and listen for 1 connection
-func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
+// ListenForOneConnection create a local socks5 proxy and listen for 1 connection.
+// The provided context bounds the dial to the upstream server so the goroutine
+// does not outlive the caller when the request is cancelled or times out.
+func ListenForOneConnection(ctx context.Context, l net.Listener, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
 	c, err := l.Accept()
 	if err != nil {
 		if !errors.Is(err, net.ErrClosed) {
@@ -57,7 +59,8 @@ func ListenForOneConnection(l net.Listener, server string, shadow func(net.Conn)
 			return
 		}
 
-		rc, err := net.Dial("tcp", server)
+		var d net.Dialer
+		rc, err := d.DialContext(ctx, "tcp", server)
 		if err != nil {
 			log.Warnf("failed to connect to server %v: %v", server, err)
 			return

@@ -9,6 +9,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/slok/go-http-metrics v0.13.0
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/goleak v1.3.0
 	golang.org/x/net v0.57.0
 )
 
