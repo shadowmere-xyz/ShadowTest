@@ -6,7 +6,7 @@ require (
 	github.com/getsentry/sentry-go v0.48.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/slok/go-http-metrics v0.13.0
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/goleak v1.3.0
